@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+/* Enables `dark:` utilities driven by a `.dark` class on <html>,
+   instead of the OS-level prefers-color-scheme default. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---- Raw semantic tokens: swap value per theme, keep var NAME stable ---- */
+:root {
+  --surface-base: #FFFFFF;
+  --surface-tint-base: #EBF4F6; /* exact "Cold" swatch from your palette */
+  --surface-alt-base: #F3FBFB;
+  --ink-base: #0B2224;
+  --ink-muted-base: #4B6A6C;
+  --border-base: #D9EFEE;
+  --card-shadow-base: rgba(9, 99, 126, 0.10);
+}
+
+/* Dark mode — soft dark-teal charcoal, NOT near-black. */
+.dark {
+  --surface-base: #0E2427;
+  --surface-tint-base: #0A1C1E;
+  --surface-alt-base: #123033;
+  --ink-base: #EAF6F5;
+  --ink-muted-base: #9FC7C5;
+  --border-base: #1F3B3E;
+  --card-shadow-base: rgba(0, 0, 0, 0.30);
+}
+
+/* ---- Tailwind design tokens — reference the raw vars above ---- */
+@theme {
+  /* Exactly your 4-color palette — no invented in-between shades. */
+  --color-primary: #088395;      /* Teal */
+  --color-primary-dark: #09637E; /* Blue — darkest, used for hovers + the brand panel bg */
+  --color-primary-light: #7AB2B2; /* Sea */
+  --color-surface-tint: var(--surface-tint-base); /* Cold #EBF4F6 in light mode */
+
+  /* Semantic surface/text tokens — auto-swap with the .dark class */
+  --color-surface: var(--surface-base);
+  --color-surface-alt: var(--surface-alt-base);
+  --color-ink: var(--ink-base);
+  --color-ink-muted: var(--ink-muted-base);
+  --color-border: var(--border-base);
+
+  --color-success: #16A34A;
+  --color-danger: #DC2626;
+  --color-warning: #D97706;
+
+  --font-heading: var(--font-heading-sans), sans-serif;
+  --font-body: var(--font-body-sans), sans-serif;
+
+  --shadow-card: 0 4px 20px -4px var(--card-shadow-base);
+  --shadow-floating: 0 16px 40px -10px var(--card-shadow-base);
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.25rem;
+}
+
+@layer components {
+  /* Screen-based type scale: sizes step up at sm/lg instead of staying fixed.
+     Same class names as before (text-h1..text-caption) — every existing
+     usage across the app picks this up automatically, nothing else changes. */
+  .text-h1 {
+    @apply text-2xl font-semibold leading-tight sm:text-3xl lg:text-4xl;
+  }
+  .text-h2 {
+    @apply text-xl font-semibold leading-snug sm:text-2xl lg:text-3xl;
+  }
+  .text-h3 {
+    @apply text-lg font-semibold leading-snug sm:text-xl lg:text-2xl;
+  }
+  .text-h4 {
+    @apply text-base font-medium leading-snug sm:text-lg;
+  }
+  .text-body {
+    @apply text-sm leading-relaxed sm:text-base;
+  }
+  .text-caption {
+    @apply text-xs leading-snug sm:text-[13px];
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply font-body text-ink bg-surface antialiased transition-colors duration-200;
+  }
+
+  h1, h2, h3, h4 {
+    @apply font-heading text-ink;
+  }
+
+  *:focus-visible {
+    outline: 2px solid #088395;
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: #088395;
+    color: #ffffff;
+  }
+}
