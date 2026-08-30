@@ -44,10 +44,17 @@ export function useColumnLayout<T>(module: string | undefined, columns: ColumnDe
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [module, saved?.status]);
 
-  const saveLayout = async () => {
+  const saveLayout = async (
+    overrides?: { columnOrder?: string[]; visibleColumnKeys?: string[] },
+    silent = false
+  ) => {
     if (!module) return;
-    await dispatch(savePersonalLayout({ module, layout: { columnOrder, visibleColumns: visibleColumnKeys } }));
-    dispatch(showToast("Saved how you like this table arranged", "success"));
+    const payload = {
+      columnOrder: overrides?.columnOrder ?? columnOrder,
+      visibleColumns: overrides?.visibleColumnKeys ?? visibleColumnKeys,
+    };
+    await dispatch(savePersonalLayout({ module, layout: payload }));
+    if (!silent) dispatch(showToast("Saved how you like this table arranged", "success"));
   };
 
   const resetToDefault = async () => {

@@ -130,10 +130,13 @@ export default function ExportMenu<T>({ columns, rows, filename, allowedRoles, s
       ? `${user.companyName} - ${user.companyShortName}`
       : user?.companyName || "";
     const now = new Date();
+    // DD/MM/YYYY, matching "14/08/2026" — en-GB gives day-first formatting.
+    const dateStr = now.toLocaleDateString("en-GB");
+    const timeStr = now.toLocaleTimeString("en-US");
     return {
       companyLine,
       branchLine: `Branch: ${scopeLabel || "All"}`,
-      downloadedLine: `Downloaded: ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`,
+      dateTimeLine: `${dateStr} ${timeStr}`,
     };
   };
 
@@ -160,40 +163,67 @@ export default function ExportMenu<T>({ columns, rows, filename, allowedRoles, s
   const handleExcel = (selectedKeys: string[]) =>
     runExport(async () => {
       const selectedColumns = exportableColumns.filter((c) => selectedKeys.includes(c.key));
-      const { companyLine, branchLine, downloadedLine } = headerBlock();
+      const { companyLine, branchLine, dateTimeLine } = headerBlock();
       const { headers, body } = buildRows(selectedColumns);
+      const lastCol = headers.length - 1;
 
       const XLSX = await import("xlsx");
-      const worksheet = XLSX.utils.aoa_to_sheet([
-        [companyLine],
-        [branchLine],
-        [downloadedLine],
-        [],
-        headers,
-        ...body,
-      ]);
+
+      const branchDateRow = Array.from({ length: lastCol + 1 }, (_, i) =>
+        i === 0 ? branchLine : i === lastCol ? dateTimeLine : ""
+      );
+
+      const worksheet = XLSX.utils.aoa_to_sheet([[companyLine], branchDateRow, [], headers, ...body]);
+
+      // Merge the company name across the table's full width so it reads as
+      // one centered heading rather than sitting only in column A.
+      worksheet["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: lastCol } }];
+
+      // Note: cell-level style writing (bold/center/right-align) depends on
+      // the "xlsx" package's style support, which is limited in the free
+      // community build — the ROW/MERGE LAYOUT below is always correct even
+      // if the visual styling doesn't render; swap to "xlsx-js-style" (a
+      // drop-in fork with full style-writing support) if it doesn't show up.
+      const companyCell = XLSX.utils.encode_cell({ r: 0, c: 0 });
+      if (worksheet[companyCell]) {
+        worksheet[companyCell].s = { font: { bold: true, sz: 14 }, alignment: { horizontal: "center" } };
+      }
+      const dateCell = XLSX.utils.encode_cell({ r: 1, c: lastCol });
+      if (worksheet[dateCell]) {
+        worksheet[dateCell].s = { alignment: { horizontal: "right" } };
+      }
+      headers.forEach((_, c) => {
+        const ref = XLSX.utils.encode_cell({ r: 3, c });
+        if (worksheet[ref]) worksheet[ref].s = { font: { bold: true } };
+      });
+
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Data");
-      XLSX.writeFile(workbook, `${filename}.xlsx`);
+      XLSX.writeFile(workbook, `${filename}.xlsx`, { cellStyles: true });
     });
 
   const handlePdf = (selectedKeys: string[]) =>
     runExport(async () => {
       const selectedColumns = exportableColumns.filter((c) => selectedKeys.includes(c.key));
-      const { companyLine, branchLine, downloadedLine } = headerBlock();
+      const { companyLine, branchLine, dateTimeLine } = headerBlock();
       const { headers, body } = buildRows(selectedColumns);
 
       const { default: jsPDF } = await import("jspdf");
       const { default: autoTable } = await import("jspdf-autotable");
       const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const marginX = 14;
 
-      doc.setFontSize(12);
-      doc.text(companyLine, 14, 15);
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.text(companyLine, pageWidth / 2, 16, { align: "center" });
+
       doc.setFontSize(9);
-      doc.text(branchLine, 14, 21);
-      doc.text(downloadedLine, 14, 26);
+      doc.setFont("helvetica", "normal");
+      doc.text(branchLine, marginX, 24, { align: "left" });
+      doc.text(dateTimeLine, pageWidth - marginX, 24, { align: "right" });
 
-      autoTable(doc, { head: [headers], body, startY: 32, styles: { fontSize: 9 } });
+      autoTable(doc, { head: [headers], body, startY: 30, styles: { fontSize: 9 } });
       doc.save(`${filename}.pdf`);
     });
 
@@ -201,7 +231,7 @@ export default function ExportMenu<T>({ columns, rows, filename, allowedRoles, s
     runExport(() => {
       // Print skips the field picker — it's meant for a quick printout of
       // what's currently visible, not a curated export.
-      const { companyLine, branchLine, downloadedLine } = headerBlock();
+      const { companyLine, branchLine, dateTimeLine } = headerBlock();
       const { headers, body } = buildRows(exportableColumns);
 
       const printWindow = window.open("", "_blank", "width=900,height=700");
@@ -219,15 +249,19 @@ export default function ExportMenu<T>({ columns, rows, filename, allowedRoles, s
           <head>
             <title>${escapeHtml(filename)}</title>
             <style>
-              body { font-family: system-ui, sans-serif; padding: 24px; }
+              @page { margin: 12mm; }
+              body { font-family: system-ui, sans-serif; padding: 0; }
               table { border-collapse: collapse; width: 100%; font-size: 13px; }
-              h1 { font-size: 16px; margin-bottom: 4px; }
-              p { font-size: 12px; color: #555; margin: 2px 0 12px; }
+              h1 { font-size: 17px; margin: 0 0 10px; text-align: center; }
+              .meta-row { display: flex; justify-content: space-between; font-size: 12px; color: #555; margin: 0 0 16px; }
             </style>
           </head>
           <body>
             <h1>${escapeHtml(companyLine)}</h1>
-            <p>${escapeHtml(branchLine)} &nbsp;·&nbsp; ${escapeHtml(downloadedLine)}</p>
+            <div class="meta-row">
+              <span>${escapeHtml(branchLine)}</span>
+              <span>${escapeHtml(dateTimeLine)}</span>
+            </div>
             <table><thead><tr>${headHtml}</tr></thead><tbody>${rowsHtml}</tbody></table>
             <script>window.onload = function () { window.print(); };</script>
           </body>

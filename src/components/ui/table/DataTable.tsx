@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
-import { MdViewColumn } from "react-icons/md";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { MdViewColumn, MdCheckBox, MdCheckBoxOutlineBlank, MdIndeterminateCheckBox } from "react-icons/md";
 import type { ColumnDef, PaginationMeta } from "@/types/dataTable";
 import type { Role } from "@/types/auth";
+import type { RowSelectionState } from "@/hooks/useRowSelection";
 import TableHeaderCell from "./TableHeaderCell";
 import Pagination from "./Pagination";
 import ColumnVisibilityMenu from "./ColumnVisibilityMenu";
@@ -38,11 +39,46 @@ interface DataTableProps<T> {
   exportRoles?: Role[];
   /** "Which branch's data" — shown in the export header block. */
   exportScopeLabel?: string;
-  /** Unique key for this table (e.g. "employees") — enables the "Arrange
-   *  columns" button and remembers each person's drag-reordered layout for
-   *  them. Omit to keep this table's columns in their declared order with
-   *  no arrange/persistence (falls back to the plain Columns show/hide only). */
+  /** Unique key for this table (e.g. "employees") — enables persisted
+   *  column preferences (order and/or visibility, depending on
+   *  `columnControls`) remembered per person. Omit to keep this table's
+   *  columns in their declared order with no persistence at all. */
   module?: string;
+  /** "arrange" = drag-to-reorder + visibility in one modal (no separate
+   *  Columns button). "toggle" = the simple show/hide dropdown only, no
+   *  reordering (still persisted via `module`, just without drag support).
+   *  Never both on the same table. Defaults to "toggle". */
+  columnControls?: "arrange" | "toggle";
+  /** Enables a checkbox column (with header select-all) — omit to leave this
+   *  table without selection entirely. Built once, reusable on any table by
+   *  passing the return value of `useRowSelection`. */
+  rowSelection?: RowSelectionState;
+}
+
+function SelectAllCheckbox({
+  checked,
+  indeterminate,
+  onChange,
+}: {
+  checked: boolean;
+  indeterminate: boolean;
+  onChange: () => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (ref.current) ref.current.indeterminate = indeterminate;
+  }, [indeterminate]);
+
+  return (
+    <input
+      ref={ref}
+      type="checkbox"
+      checked={checked}
+      onChange={onChange}
+      className="h-4 w-4 cursor-pointer rounded accent-primary"
+      aria-label="Select all"
+    />
+  );
 }
 
 function SkeletonCell() {
@@ -74,6 +110,8 @@ export default function DataTable<T>({
   exportRoles,
   exportScopeLabel,
   module,
+  columnControls = "toggle",
+  rowSelection,
 }: DataTableProps<T>) {
   const [isArranging, setIsArranging] = useState(false);
   const layout = useColumnLayout(module, columns);
@@ -120,7 +158,7 @@ export default function DataTable<T>({
             scopeLabel={exportScopeLabel}
           />
         )}
-        {module && (
+        {module && columnControls === "arrange" ? (
           <button
             type="button"
             onClick={() => setIsArranging(true)}
@@ -128,8 +166,20 @@ export default function DataTable<T>({
           >
             <MdViewColumn size={16} /> Arrange
           </button>
+        ) : (
+          <ColumnVisibilityMenu
+            columns={columns}
+            visibleKeys={visibleColumnKeys}
+            onChange={(keys) => {
+              onVisibleColumnsChange(keys);
+              // Toggle mode has no explicit "Save" button (that's the whole
+              // point — it's meant to stay simple) — persist quietly in the
+              // background instead, using the fresh keys directly rather
+              // than the hook's not-yet-updated state.
+              if (module) layout.saveLayout({ visibleColumnKeys: keys }, true);
+            }}
+          />
         )}
-        <ColumnVisibilityMenu columns={columns} visibleKeys={visibleColumnKeys} onChange={onVisibleColumnsChange} />
       </div>
 
       {/* Desktop table */}
@@ -137,6 +187,15 @@ export default function DataTable<T>({
         <table className="w-full min-w-[720px] border-collapse text-sm">
           <thead>
             <tr className="bg-primary-dark">
+              {rowSelection && (
+                <th className="w-10 px-4 py-3.5">
+                  <SelectAllCheckbox
+                    checked={rowSelection.isAllVisibleSelected}
+                    indeterminate={rowSelection.isSomeVisibleSelected}
+                    onChange={rowSelection.toggleAllVisible}
+                  />
+                </th>
+              )}
               {visibleColumns.map((column) => (
                 <TableHeaderCell
                   key={column.key}
@@ -152,6 +211,7 @@ export default function DataTable<T>({
             {isLoading &&
               Array.from({ length: skeletonRowCount }).map((_, rowIndex) => (
                 <tr key={`skeleton-${rowIndex}`} className="border-b border-border last:border-0">
+                  {rowSelection && <SkeletonCell />}
                   {visibleColumns.map((column) => (
                     <SkeletonCell key={column.key} />
                   ))}
@@ -160,31 +220,55 @@ export default function DataTable<T>({
 
             {isEmpty && (
               <tr>
-                <td colSpan={visibleColumns.length} className="px-4 py-16 text-center text-ink-muted">
+                <td
+                  colSpan={visibleColumns.length + (rowSelection ? 1 : 0)}
+                  className="px-4 py-16 text-center text-ink-muted"
+                >
                   {emptyMessage}
                 </td>
               </tr>
             )}
 
             {!isLoading &&
-              sortedRows.map((row) => (
-                <tr key={keyField(row)} className="border-b border-border last:border-0 hover:bg-surface-tint/50">
-                  {visibleColumns.map((column) => (
-                    <td
-                      key={column.key}
-                      className={`px-4 py-3 ${
-                        column.align === "right" ? "text-right" : column.align === "center" ? "text-center" : ""
-                      }`}
-                    >
-                      {column.render(row)}
-                    </td>
-                  ))}
-                </tr>
-              ))}
+              sortedRows.map((row) => {
+                const rowId = keyField(row);
+                const isSelected = rowSelection?.selectedIds.has(rowId) ?? false;
+                return (
+                  <tr
+                    key={rowId}
+                    className={`border-b border-border last:border-0 hover:bg-surface-tint/50 ${
+                      isSelected ? "bg-primary/5" : ""
+                    }`}
+                  >
+                    {rowSelection && (
+                      <td className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => rowSelection.toggleRow(rowId)}
+                          className="h-4 w-4 cursor-pointer rounded accent-primary"
+                          aria-label="Select row"
+                        />
+                      </td>
+                    )}
+                    {visibleColumns.map((column) => (
+                      <td
+                        key={column.key}
+                        className={`px-4 py-3 ${
+                          column.align === "right" ? "text-right" : column.align === "center" ? "text-center" : ""
+                        }`}
+                      >
+                        {column.render(row)}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
           </tbody>
           {showFooter && !isLoading && !isEmpty && (
             <tfoot>
               <tr className="border-t-2 border-border bg-surface-tint font-medium text-ink">
+                {rowSelection && <td className="px-4 py-3" />}
                 {visibleColumns.map((column) => (
                   <td key={column.key} className={`px-4 py-3 ${column.align === "right" ? "text-right" : ""}`}>
                     {column.footer ? column.footer(sortedRows) : null}
@@ -222,7 +306,7 @@ export default function DataTable<T>({
         </div>
       )}
 
-      {module && (
+      {module && columnControls === "arrange" && (
         <ColumnArrangeModal
           open={isArranging}
           onClose={() => setIsArranging(false)}
@@ -233,7 +317,9 @@ export default function DataTable<T>({
             layout.setColumnOrder(newOrder);
             layout.setVisibleColumnKeys(newVisible);
           }}
-          onSave={layout.saveLayout}
+          onSave={(newOrder, newVisible) =>
+            layout.saveLayout({ columnOrder: newOrder, visibleColumnKeys: newVisible })
+          }
           onResetToDefault={layout.resetToDefault}
         />
       )}

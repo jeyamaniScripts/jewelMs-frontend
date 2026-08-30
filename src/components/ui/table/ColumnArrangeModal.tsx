@@ -13,7 +13,7 @@ interface ColumnArrangeModalProps<T> {
   columnOrder: string[];
   visibleColumnKeys: string[];
   onApply: (order: string[], visible: string[]) => void;
-  onSave: () => Promise<void>;
+  onSave: (order: string[], visible: string[]) => Promise<void>;
   onResetToDefault: () => Promise<void>;
 }
 
@@ -126,7 +126,13 @@ export default function ColumnArrangeModal<T>({
           <Button type="button" variant="outline" fullWidth={false} className="px-4" onClick={applyAndClose}>
             Apply once
           </Button>
-          <Button type="button" fullWidth={false} className="px-4" isLoading={isSaving} onClick={() => runSave(onSave)}>
+          <Button
+            type="button"
+            fullWidth={false}
+            className="px-4"
+            isLoading={isSaving}
+            onClick={() => runSave(() => onSave(draftOrder, draftVisible))}
+          >
             Save my arrangement
           </Button>
         </div>

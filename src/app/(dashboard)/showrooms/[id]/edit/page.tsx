@@ -41,7 +41,7 @@ export default function EditShowroomPage() {
           address: activeShowroom.address ?? "",
         }}
         onCreated={() => {
-          dispatch(showToast("Showroom updated", "success"));
+          dispatch(showToast("Showroom updated successfully.", "success"));
           router.push("/showrooms");
         }}
       />

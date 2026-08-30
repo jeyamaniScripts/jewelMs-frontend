@@ -122,7 +122,7 @@ export default function ShowroomForm({ onCreated, editingShowroomId, defaultValu
 
       <Checkbox
         label="This is the brand's main branch"
-        name="isMainBranch"
+        // name="isMainBranch"
         {...register("isMainBranch")}
       />
       <p className="-mt-3 text-caption text-ink-muted">

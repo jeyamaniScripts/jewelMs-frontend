@@ -67,7 +67,7 @@ export default function EditEmployeePage() {
           status: e.status,
         }}
         onCreated={() => {
-          dispatch(showToast("Employee updated", "success"));
+          dispatch(showToast("Employee updated successfully.", "success"));
           router.push("/employees");
         }}
       />

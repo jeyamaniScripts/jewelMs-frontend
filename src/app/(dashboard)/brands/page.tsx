@@ -20,15 +20,23 @@ export default function BrandsPage() {
   const table = useTableController("companyName");
 
   useEffect(() => {
-    dispatch(
+    const request = dispatch(
       fetchBrands({
         search: table.search,
-        sortBy: table.sortBy as "companyName" | "shortName" | "createdAt" | "showroomsCount",
+        sortBy: table.sortBy as
+          | "companyName"
+          | "shortName"
+          | "ownerName"
+          | "email"
+          | "showroomsCount"
+          | "createdAt"
+          | "status",
         order: table.order,
         page: table.page,
         limit: table.limit,
       })
     );
+    return () => request.abort();
   }, [dispatch, table.search, table.sortBy, table.order, table.page, table.limit]);
 
   return (

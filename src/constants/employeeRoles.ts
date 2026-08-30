@@ -23,7 +23,18 @@ export const ASSIGNABLE_ROLES_BY_CREATOR: Partial<Record<Role, Role[]>> = {
   showroom_admin: ["showroom_manager", "cashier", "staff"],
 };
 
-export const EMPLOYEE_ROLE_LABEL: Record<Role, string> = {
+// export const EMPLOYEE_ROLE_LABEL: Record<Role, string> = {
+//   super_admin: "Super Admin",
+//   brand_admin: "Brand Admin",
+//   brand_hr: "HR",
+//   brand_manager: "Brand Manager",
+//   showroom_admin: "Showroom Admin",
+//   showroom_manager: "Showroom Manager",
+//   cashier: "Cashier",
+//   staff: "Staff",
+// };
+// ✅ New line:
+export const EMPLOYEE_ROLE_LABEL: Record<string, string> = {
   super_admin: "Super Admin",
   brand_admin: "Brand Admin",
   brand_hr: "HR",

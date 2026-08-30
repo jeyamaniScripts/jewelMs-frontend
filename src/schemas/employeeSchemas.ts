@@ -58,13 +58,16 @@ export const employeeSchema = z
     // Role / access
     role: z.string().min(1, "Select a role"),
     showroomId: z.string().optional().or(z.literal("")),
-    status: z.enum(["active", "inactive"]).default("active"),
+    // status: z.enum(["active", "inactive"]).default("active"),
 
     // Login credentials — conditional on wantsCredentials
-    wantsCredentials: z.boolean().default(true),
+    // wantsCredentials: z.boolean().default(true),
     username: z.string().max(60, "Too long").optional().or(z.literal("")),
-    passwordMode: z.enum(["auto", "manual"]).default("auto"),
+    // passwordMode: z.enum(["auto", "manual"]).default("auto"),
     manualPassword: z.string().optional().or(z.literal("")),
+    status: z.enum(["active", "inactive"]),
+wantsCredentials: z.boolean(),
+passwordMode: z.enum(["auto", "manual"]),
   })
   .superRefine((data, ctx) => {
     if (data.wantsCredentials) {

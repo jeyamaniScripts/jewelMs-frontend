@@ -2,7 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { MdRefresh, MdDelete, MdEdit, MdPeople, MdCheckCircle, MdCancel, MdVisibility, MdVpnKey } from "react-icons/md";
+import {
+  MdRefresh,
+  MdDelete,
+  MdEdit,
+  MdPeople,
+  MdCheckCircle,
+  MdCancel,
+  MdVisibility,
+  MdVpnKey,
+  MdClose,
+} from "react-icons/md";
 import type { Employee } from "@/types/employee";
 import type { ColumnDef, PaginationMeta } from "@/types/dataTable";
 import { EMPLOYEE_ROLE_LABEL } from "@/constants/employeeRoles";
@@ -18,6 +28,8 @@ import DataTable from "@/components/ui/table/DataTable";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import Modal from "@/components/ui/Modal";
 import EmployeeDetails from "@/components/employee/EmployeeDetails";
+import { useRowSelection } from "@/hooks/useRowSelection";
+import Button from "@/components/ui/Button";
 
 function StatusBadge({ status }: { status: Employee["status"] }) {
   const active = status === "active";
@@ -62,10 +74,14 @@ function EmployeeActions({ employee, onView }: { employee: Employee; onView: () 
 
   const handleDelete = async () => {
     setIsDeleting(true);
-    await dispatch(deleteEmployee(employee.id));
+    const result = await dispatch(deleteEmployee(employee.id));
     setIsDeleting(false);
     setConfirmingDelete(false);
-    dispatch(showToast("Employee deleted", "success"));
+    if (deleteEmployee.fulfilled.match(result)) {
+      dispatch(showToast("Employee deleted successfully.", "success"));
+    } else {
+      dispatch(showToast("Failed to delete employee. Please try again.", "error"));
+    }
   };
 
   return (
@@ -88,14 +104,17 @@ function EmployeeActions({ employee, onView }: { employee: Employee; onView: () 
         </Link>
         <button
           type="button"
-          onClick={() =>
-            dispatch(
-              toggleEmployeeStatus({
-                id: employee.id,
-                status: employee.status === "active" ? "inactive" : "active",
-              })
-            )
-          }
+          onClick={async () => {
+            const willActivate = employee.status !== "active";
+            const result = await dispatch(
+              toggleEmployeeStatus({ id: employee.id, status: willActivate ? "active" : "inactive" })
+            );
+            if (toggleEmployeeStatus.fulfilled.match(result)) {
+              dispatch(showToast(`Employee ${willActivate ? "activated" : "deactivated"} successfully.`, "success"));
+            } else {
+              dispatch(showToast("Failed to update employee status. Please try again.", "error"));
+            }
+          }}
           title={employee.status === "active" ? "Deactivate" : "Activate"}
           className="rounded-lg p-2 text-ink-muted hover:bg-surface-tint hover:text-primary"
         >
@@ -104,7 +123,12 @@ function EmployeeActions({ employee, onView }: { employee: Employee; onView: () 
         {employee.hasCredentials ? (
           <button
             type="button"
-            onClick={() => dispatch(regenerateEmployeeCredentials({ employee }))}
+            onClick={async () => {
+              const result = await dispatch(regenerateEmployeeCredentials({ employee }));
+              if (!regenerateEmployeeCredentials.fulfilled.match(result)) {
+                dispatch(showToast("Failed to regenerate credentials. Please try again.", "error"));
+              }
+            }}
             title="Reset / regenerate login credentials"
             className="rounded-lg p-2 text-ink-muted hover:bg-surface-tint hover:text-primary"
           >
@@ -113,7 +137,12 @@ function EmployeeActions({ employee, onView }: { employee: Employee; onView: () 
         ) : (
           <button
             type="button"
-            onClick={() => dispatch(grantEmployeeCredentials({ employee }))}
+            onClick={async () => {
+              const result = await dispatch(grantEmployeeCredentials({ employee }));
+              if (!grantEmployeeCredentials.fulfilled.match(result)) {
+                dispatch(showToast("Failed to grant login access. Please try again.", "error"));
+              }
+            }}
             title="Grant login access"
             className="rounded-lg p-2 text-ink-muted hover:bg-surface-tint hover:text-primary"
           >
@@ -158,37 +187,63 @@ const COLUMNS: ColumnDef<Employee>[] = [
     exportValue: (e) => `${e.fullName} (${e.employeeCode})`,
   },
   {
-    key: "contact",
+    key: "email",
     header: "Contact",
-    sortable: false,
+    sortable: true,
     render: (e) => (
       <div>
         <div className="text-ink-muted">{e.email}</div>
         <div className="text-caption text-ink-muted">{e.mobile}</div>
       </div>
     ),
+    sortValue: (e) => e.email.toLowerCase(),
     exportValue: (e) => `${e.email} / ${e.mobile}`,
   },
   { key: "role", header: "Role", sortable: true, render: (e) => <RoleBadge role={e.role} />, sortValue: (e) => e.role, exportValue: (e) => e.role },
-  { key: "department", header: "Department", sortable: false, defaultVisible: false, render: (e) => e.department || "—", exportValue: (e) => e.department || "" },
-  { key: "designation", header: "Designation", sortable: false, defaultVisible: false, render: (e) => e.designation || "—", exportValue: (e) => e.designation || "" },
+  {
+    key: "department",
+    header: "Department",
+    sortable: true,
+    defaultVisible: false,
+    render: (e) => e.department || "—",
+    sortValue: (e) => (e.department || "").toLowerCase(),
+    exportValue: (e) => e.department || "",
+  },
+  {
+    key: "designation",
+    header: "Designation",
+    sortable: true,
+    defaultVisible: false,
+    render: (e) => e.designation || "—",
+    sortValue: (e) => (e.designation || "").toLowerCase(),
+    exportValue: (e) => e.designation || "",
+  },
   {
     key: "employeeType",
     header: "Employee type",
-    sortable: false,
+    sortable: true,
     defaultVisible: false,
     render: (e) => e.employeeType || "—",
+    sortValue: (e) => e.employeeType || "",
     exportValue: (e) => e.employeeType || "",
   },
   {
     key: "joiningDate",
     header: "Joining date",
-    sortable: false,
+    sortable: true,
     defaultVisible: false,
     render: (e) => (e.joiningDate ? new Date(e.joiningDate).toLocaleDateString() : "—"),
+    sortValue: (e) => (e.joiningDate ? new Date(e.joiningDate).getTime() : 0),
     exportValue: (e) => (e.joiningDate ? new Date(e.joiningDate).toLocaleDateString() : ""),
   },
-  { key: "login", header: "Login", sortable: false, render: (e) => <CredentialsBadge hasCredentials={e.hasCredentials} />, exportValue: (e) => (e.hasCredentials ? "Login enabled" : "No login") },
+  {
+    key: "hasCredentials",
+    header: "Login",
+    sortable: true,
+    render: (e) => <CredentialsBadge hasCredentials={e.hasCredentials} />,
+    sortValue: (e) => (e.hasCredentials ? 1 : 0),
+    exportValue: (e) => (e.hasCredentials ? "Login enabled" : "No login"),
+  },
   { key: "status", header: "Status", sortable: true, render: (e) => <StatusBadge status={e.status} />, sortValue: (e) => e.status, exportValue: (e) => e.status },
 ];
 
@@ -213,10 +268,58 @@ export default function EmployeeTable({
   isLoading?: boolean;
   scopeLabel?: string;
 }) {
+  const dispatch = useAppDispatch();
   const [visibleColumnKeys, setVisibleColumnKeys] = useState(
     COLUMNS.filter((c) => c.defaultVisible !== false).map((c) => c.key)
   );
   const [viewingEmployee, setViewingEmployee] = useState<Employee | null>(null);
+  const selection = useRowSelection(employees, (e) => e.id);
+  const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false);
+  const [isBulkWorking, setIsBulkWorking] = useState(false);
+
+  const runBulkAction = async (
+    action: (id: string) => Promise<{ meta: { requestStatus: string } }>,
+    successMessage: string,
+    failureMessage: string
+  ) => {
+    setIsBulkWorking(true);
+    const ids = selection.selectedIdList;
+    const results = await Promise.all(ids.map((id) => action(id)));
+    setIsBulkWorking(false);
+    selection.clearSelection();
+    setConfirmingBulkDelete(false);
+
+    const failedCount = results.filter((r) => r.meta.requestStatus === "rejected").length;
+
+    if (failedCount === 0) {
+      dispatch(showToast(successMessage, "success"));
+    } else if (failedCount === ids.length) {
+      dispatch(showToast(failureMessage, "error"));
+    } else {
+      dispatch(showToast(`${ids.length - failedCount} of ${ids.length} succeeded — some failed.`, "warning"));
+    }
+  };
+
+  const handleBulkActivate = () =>
+    runBulkAction(
+      (id) => dispatch(toggleEmployeeStatus({ id, status: "active" })),
+      "Selected employees activated successfully.",
+      "Failed to activate selected employees."
+    );
+
+  const handleBulkDeactivate = () =>
+    runBulkAction(
+      (id) => dispatch(toggleEmployeeStatus({ id, status: "inactive" })),
+      "Selected employees deactivated successfully.",
+      "Failed to deactivate selected employees."
+    );
+
+  const handleBulkDelete = () =>
+    runBulkAction(
+      (id) => dispatch(deleteEmployee(id)),
+      "Selected employees deleted successfully.",
+      "Failed to delete selected employees."
+    );
 
   const columnsWithActions: ColumnDef<Employee>[] = [
     ...COLUMNS,
@@ -233,6 +336,51 @@ export default function EmployeeTable({
 
   return (
     <>
+      {selection.selectedCount > 0 && (
+        <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2.5">
+          <span className="text-sm font-medium text-ink">{selection.selectedCount} selected</span>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              fullWidth={false}
+              className="px-3 py-1.5 text-sm"
+              isLoading={isBulkWorking}
+              onClick={handleBulkActivate}
+            >
+              Activate
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              fullWidth={false}
+              className="px-3 py-1.5 text-sm"
+              isLoading={isBulkWorking}
+              onClick={handleBulkDeactivate}
+            >
+              Deactivate
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              fullWidth={false}
+              className="px-3 py-1.5 text-sm"
+              onClick={() => setConfirmingBulkDelete(true)}
+            >
+              Delete
+            </Button>
+            <button
+              type="button"
+              onClick={selection.clearSelection}
+              className="rounded-lg p-1.5 text-ink-muted hover:bg-surface-tint hover:text-ink"
+              aria-label="Clear selection"
+            >
+              <MdClose size={16} />
+            </button>
+          </div>
+        </div>
+      )}
+
       <DataTable
         columns={columnsWithActions}
         rows={employees}
@@ -249,6 +397,8 @@ export default function EmployeeTable({
         exportFilename="employees"
         exportScopeLabel={scopeLabel}
         module="employees"
+        columnControls="arrange"
+        rowSelection={selection}
         mobileCard={(employee) => (
           <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
             <div className="flex items-start justify-between gap-2">
@@ -283,6 +433,16 @@ export default function EmployeeTable({
       >
         {viewingEmployee && <EmployeeDetails employee={viewingEmployee} />}
       </Modal>
+
+      <ConfirmDialog
+        open={confirmingBulkDelete}
+        title="Delete selected employees?"
+        message={`This permanently deletes ${selection.selectedCount} employee${selection.selectedCount === 1 ? "" : "s"} and any of their logins. This can't be undone.`}
+        confirmLabel="Delete"
+        isLoading={isBulkWorking}
+        onConfirm={handleBulkDelete}
+        onCancel={() => setConfirmingBulkDelete(false)}
+      />
     </>
   );
 }

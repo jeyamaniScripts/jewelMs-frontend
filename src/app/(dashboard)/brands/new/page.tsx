@@ -31,7 +31,7 @@ export default function NewBrandPage() {
           />
         </div>
       ) : (
-        <BrandForm onCreated={() => dispatch(showToast("Brand created", "success"))} />
+        <BrandForm onCreated={() => dispatch(showToast("Brand created successfully.", "success"))} />
       )}
     </div>
   );

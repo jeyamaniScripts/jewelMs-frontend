@@ -65,7 +65,7 @@ export default function Dropdown({
           disabled:cursor-not-allowed disabled:opacity-50
           ${error ? "border-danger focus:border-danger" : "border-border focus:border-primary"}`}
       >
-        <span className={selectedOption ? "text-ink" : "text-ink-muted/70"}>
+        <span className={`truncate ${selectedOption ? "text-ink" : "text-ink-muted/70"}`}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         <FiChevronDown

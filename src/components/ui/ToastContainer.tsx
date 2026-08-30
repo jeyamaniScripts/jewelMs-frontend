@@ -80,7 +80,7 @@ export default function ToastContainer() {
   return (
     <div
       className={`pointer-events-none fixed right-4 z-[100] flex flex-col gap-2.5 sm:right-6
-        ${isOnline ? "top-4 sm:top-6" : "top-12 sm:top-14"}`}
+        ${isOnline ? "top-[68px] sm:top-[76px]" : "top-[104px] sm:top-[112px]"}`}
     >
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} />

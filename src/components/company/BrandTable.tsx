@@ -33,10 +33,14 @@ function BrandActions({ brand, onView }: { brand: Brand; onView: () => void }) {
 
   const handleDelete = async () => {
     setIsDeleting(true);
-    await dispatch(deleteBrand(brand.id));
+    const result = await dispatch(deleteBrand(brand.id));
     setIsDeleting(false);
     setConfirmingDelete(false);
-    dispatch(showToast("Brand deleted", "success"));
+    if (deleteBrand.fulfilled.match(result)) {
+      dispatch(showToast("Brand deleted successfully.", "success"));
+    } else {
+      dispatch(showToast("Failed to delete brand. Please try again.", "error"));
+    }
   };
 
   return (
@@ -59,9 +63,17 @@ function BrandActions({ brand, onView }: { brand: Brand; onView: () => void }) {
         </Link>
         <button
           type="button"
-          onClick={() =>
-            dispatch(toggleBrandStatus({ id: brand.id, status: brand.status === "active" ? "inactive" : "active" }))
-          }
+          onClick={async () => {
+            const willActivate = brand.status !== "active";
+            const result = await dispatch(
+              toggleBrandStatus({ id: brand.id, status: willActivate ? "active" : "inactive" })
+            );
+            if (toggleBrandStatus.fulfilled.match(result)) {
+              dispatch(showToast(`Brand ${willActivate ? "activated" : "deactivated"} successfully.`, "success"));
+            } else {
+              dispatch(showToast("Failed to update brand status. Please try again.", "error"));
+            }
+          }}
           title={brand.status === "active" ? "Deactivate" : "Activate"}
           className="rounded-lg p-2 text-ink-muted hover:bg-surface-tint hover:text-primary"
         >
@@ -69,7 +81,12 @@ function BrandActions({ brand, onView }: { brand: Brand; onView: () => void }) {
         </button>
         <button
           type="button"
-          onClick={() => dispatch(regenerateCredentials(brand))}
+          onClick={async () => {
+            const result = await dispatch(regenerateCredentials(brand));
+            if (!regenerateCredentials.fulfilled.match(result)) {
+              dispatch(showToast("Failed to regenerate credentials. Please try again.", "error"));
+            }
+          }}
           title="Reset / regenerate login credentials"
           className="rounded-lg p-2 text-ink-muted hover:bg-surface-tint hover:text-primary"
         >
@@ -117,17 +134,25 @@ const COLUMNS: ColumnDef<Brand>[] = [
     sortValue: (b) => (b.shortName || b.companyName).toLowerCase(),
     exportValue: (b) => b.shortName || "",
   },
-  { key: "ownerName", header: "Owner", sortable: false, render: (b) => b.ownerName, exportValue: (b) => b.ownerName },
   {
-    key: "contact",
+    key: "ownerName",
+    header: "Owner",
+    sortable: true,
+    render: (b) => b.ownerName,
+    sortValue: (b) => b.ownerName.toLowerCase(),
+    exportValue: (b) => b.ownerName,
+  },
+  {
+    key: "email",
     header: "Contact",
-    sortable: false,
+    sortable: true,
     render: (b) => (
       <div>
         <div className="text-ink-muted">{b.email}</div>
         <div className="text-caption text-ink-muted">{b.phone}</div>
       </div>
     ),
+    sortValue: (b) => b.email.toLowerCase(),
     exportValue: (b) => `${b.email} / ${b.phone}`,
   },
   {
@@ -149,7 +174,14 @@ const COLUMNS: ColumnDef<Brand>[] = [
     sortValue: (b) => new Date(b.createdAt).getTime(),
     exportValue: (b) => new Date(b.createdAt).toLocaleDateString(),
   },
-  { key: "status", header: "Status", sortable: false, render: (b) => <StatusBadge status={b.status} />, exportValue: (b) => b.status },
+  {
+    key: "status",
+    header: "Status",
+    sortable: true,
+    render: (b) => <StatusBadge status={b.status} />,
+    sortValue: (b) => b.status,
+    exportValue: (b) => b.status,
+  },
 ];
 
 export default function BrandTable({

@@ -31,10 +31,14 @@ function ShowroomActions({ showroom }: { showroom: Showroom }) {
 
   const handleDelete = async () => {
     setIsDeleting(true);
-    await dispatch(deleteShowroom(showroom.id));
+    const result = await dispatch(deleteShowroom(showroom.id));
     setIsDeleting(false);
     setConfirmingDelete(false);
-    dispatch(showToast("Showroom deleted", "success"));
+    if (deleteShowroom.fulfilled.match(result)) {
+      dispatch(showToast("Showroom deleted successfully.", "success"));
+    } else {
+      dispatch(showToast("Failed to delete showroom. Please try again.", "error"));
+    }
   };
 
   return (
@@ -49,14 +53,17 @@ function ShowroomActions({ showroom }: { showroom: Showroom }) {
         </Link>
         <button
           type="button"
-          onClick={() =>
-            dispatch(
-              toggleShowroomStatus({
-                id: showroom.id,
-                status: showroom.status === "active" ? "inactive" : "active",
-              })
-            )
-          }
+          onClick={async () => {
+            const willActivate = showroom.status !== "active";
+            const result = await dispatch(
+              toggleShowroomStatus({ id: showroom.id, status: willActivate ? "active" : "inactive" })
+            );
+            if (toggleShowroomStatus.fulfilled.match(result)) {
+              dispatch(showToast(`Showroom ${willActivate ? "activated" : "deactivated"} successfully.`, "success"));
+            } else {
+              dispatch(showToast("Failed to update showroom status. Please try again.", "error"));
+            }
+          }}
           title={showroom.status === "active" ? "Deactivate" : "Activate"}
           className="rounded-lg p-2 text-ink-muted hover:bg-surface-tint hover:text-primary"
         >
@@ -64,7 +71,12 @@ function ShowroomActions({ showroom }: { showroom: Showroom }) {
         </button>
         <button
           type="button"
-          onClick={() => dispatch(regenerateShowroomCredentials(showroom))}
+          onClick={async () => {
+            const result = await dispatch(regenerateShowroomCredentials(showroom));
+            if (!regenerateShowroomCredentials.fulfilled.match(result)) {
+              dispatch(showToast("Failed to regenerate credentials. Please try again.", "error"));
+            }
+          }}
           title="Reset / regenerate login credentials"
           className="rounded-lg p-2 text-ink-muted hover:bg-surface-tint hover:text-primary"
         >
@@ -120,17 +132,25 @@ const COLUMNS: ColumnDef<Showroom>[] = [
     sortValue: (s) => (s.shortName || s.showroomName).toLowerCase(),
     exportValue: (s) => s.shortName || "",
   },
-  { key: "managerName", header: "Manager", sortable: false, render: (s) => s.managerName, exportValue: (s) => s.managerName },
   {
-    key: "contact",
+    key: "managerName",
+    header: "Manager",
+    sortable: true,
+    render: (s) => s.managerName,
+    sortValue: (s) => s.managerName.toLowerCase(),
+    exportValue: (s) => s.managerName,
+  },
+  {
+    key: "contactEmail",
     header: "Contact",
-    sortable: false,
+    sortable: true,
     render: (s) => (
       <div>
         <div className="text-ink-muted">{s.contactEmail}</div>
         <div className="text-caption text-ink-muted">{s.contactPhone}</div>
       </div>
     ),
+    sortValue: (s) => s.contactEmail.toLowerCase(),
     exportValue: (s) => `${s.contactEmail} / ${s.contactPhone}`,
   },
   {
@@ -152,7 +172,14 @@ const COLUMNS: ColumnDef<Showroom>[] = [
     sortValue: (s) => new Date(s.createdAt).getTime(),
     exportValue: (s) => new Date(s.createdAt).toLocaleDateString(),
   },
-  { key: "status", header: "Status", sortable: false, render: (s) => <StatusBadge status={s.status} />, exportValue: (s) => s.status },
+  {
+    key: "status",
+    header: "Status",
+    sortable: true,
+    render: (s) => <StatusBadge status={s.status} />,
+    sortValue: (s) => s.status,
+    exportValue: (s) => s.status,
+  },
 ];
 
 export default function ShowroomTable({
@@ -209,6 +236,7 @@ export default function ShowroomTable({
       exportFilename="showrooms"
       exportScopeLabel="All Showrooms"
       module="showrooms"
+      columnControls="toggle"
       mobileCard={(showroom) => (
         <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
           <div className="flex items-start justify-between gap-2">

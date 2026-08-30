@@ -29,13 +29,13 @@ function errorMessage(err: unknown, fallback: string): string {
 
 export interface BrandListQuery {
   search?: string;
-  sortBy?: "companyName" | "shortName" | "createdAt" | "showroomsCount";
+  sortBy?: "companyName" | "shortName" | "ownerName" | "email" | "showroomsCount" | "createdAt" | "status";
   order?: "asc" | "desc";
   page?: number;
   limit?: number;
 }
 
-export const fetchBrands = createAsyncThunk("company/fetchBrands", async (query: BrandListQuery = {}) => {
+export const fetchBrands = createAsyncThunk("company/fetchBrands", async (query: BrandListQuery = {}, { signal }) => {
   const params = new URLSearchParams();
   if (query.search) params.set("search", query.search);
   if (query.sortBy) params.set("sortBy", query.sortBy);
@@ -44,12 +44,31 @@ export const fetchBrands = createAsyncThunk("company/fetchBrands", async (query:
   if (query.limit) params.set("limit", String(query.limit));
 
   const qs = params.toString();
-  return apiRequest<{ brands: Brand[]; pagination: PaginationMeta }>(`/brands${qs ? `?${qs}` : ""}`);
+  return apiRequest<{ brands: Brand[]; pagination: PaginationMeta }>(`/brands${qs ? `?${qs}` : ""}`, { signal });
 });
 
 export const fetchBrandById = createAsyncThunk("company/fetchBrandById", async (id: string) => {
   const { brand } = await apiRequest<{ brand: Brand }>(`/brands/${id}`);
   return brand;
+});
+
+/** Company Details (Site Settings) — a Brand Admin's own brand, no id needed. */
+export const fetchMyBrand = createAsyncThunk("company/fetchMyBrand", async () => {
+  const { brand } = await apiRequest<{ brand: Brand }>("/brands/me");
+  return brand;
+});
+
+export const updateMyBrand = createAsyncThunk<
+  Brand,
+  Partial<BrandFormValues>,
+  { rejectValue: string }
+>("company/updateMyBrand", async (formData, { rejectWithValue }) => {
+  try {
+    const { brand } = await apiRequest<{ brand: Brand }>("/brands/me", { method: "PATCH", body: formData });
+    return brand;
+  } catch (err) {
+    return rejectWithValue(errorMessage(err, "Could not update company details"));
+  }
 });
 
 export const createBrand = createAsyncThunk<
@@ -122,7 +141,8 @@ const companySlice = createSlice({
         state.brands = action.payload.brands;
         state.pagination = action.payload.pagination;
       })
-      .addCase(fetchBrands.rejected, (state) => {
+      .addCase(fetchBrands.rejected, (state, action) => {
+        if (action.meta.aborted) return;
         state.status = "failed";
         state.error = "Could not load brands";
       })
@@ -137,6 +157,31 @@ const companySlice = createSlice({
       .addCase(fetchBrandById.rejected, (state) => {
         state.status = "failed";
         state.error = "Could not load brand";
+      })
+
+      .addCase(fetchMyBrand.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchMyBrand.fulfilled, (state, action: PayloadAction<Brand>) => {
+        state.status = "succeeded";
+        state.activeBrand = action.payload;
+      })
+      .addCase(fetchMyBrand.rejected, (state) => {
+        state.status = "failed";
+        state.error = "Could not load company details";
+      })
+
+      .addCase(updateMyBrand.pending, (state) => {
+        state.status = "loading";
+        state.error = null;
+      })
+      .addCase(updateMyBrand.fulfilled, (state, action: PayloadAction<Brand>) => {
+        state.status = "succeeded";
+        state.activeBrand = action.payload;
+      })
+      .addCase(updateMyBrand.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload ?? "Could not update company details";
       })
 
       .addCase(createBrand.pending, (state) => {

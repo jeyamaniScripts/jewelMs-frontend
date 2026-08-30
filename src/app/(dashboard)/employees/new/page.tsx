@@ -54,7 +54,7 @@ export default function NewEmployeePage() {
       ) : (
         <EmployeeForm
           onCreated={(hasCredentials) => {
-            dispatch(showToast("Employee created", "success"));
+            dispatch(showToast("Employee created successfully.", "success"));
             if (!hasCredentials) setCreatedWithoutLogin(true);
           }}
         />

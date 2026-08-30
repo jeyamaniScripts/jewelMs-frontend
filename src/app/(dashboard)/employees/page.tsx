@@ -16,7 +16,6 @@ import type { Role } from "@/types/auth";
 import { useTableController } from "@/hooks/useTableController";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { fetchEmployees, clearEmployeeCredentials } from "@/redux/slices/employeeSlice";
-import { clearBranchDataLoading } from "@/redux/slices/showroomSlice";
 import { fetchRolePermissions } from "@/redux/slices/permissionSlice";
 
 // Built-in roles that actually get assigned to Employee records — excludes
@@ -48,7 +47,7 @@ export default function EmployeesPage() {
   // returned (already scoped to this brand) — so newly-added custom roles
   // show up here too, not just on the create form.
   const roleFilterOptions = useMemo(() => {
-    const builtIns = BUILT_IN_EMPLOYEE_ROLES.map((role) => ({ value: role, label: EMPLOYEE_ROLE_LABEL[role] }));
+    const builtIns = BUILT_IN_EMPLOYEE_ROLES.map((role) => ({ value: role, label: EMPLOYEE_ROLE_LABEL[role]??role }));
     const custom = allRoles
       .filter((r) => r.isCustom)
       .map((r) => ({ value: r.roleKey, label: `${r.label} (custom)` }));
@@ -56,17 +55,31 @@ export default function EmployeesPage() {
   }, [allRoles]);
 
   useEffect(() => {
-    dispatch(
+    const request = dispatch(
       fetchEmployees({
         search: table.search,
         role: roleFilter || undefined,
         showroomId: canViewAllBranches ? selectedBranchId ?? undefined : undefined,
-        sortBy: table.sortBy as "fullName" | "createdAt" | "role" | "status",
+        sortBy: table.sortBy as
+          | "fullName"
+          | "email"
+          | "role"
+          | "department"
+          | "designation"
+          | "employeeType"
+          | "joiningDate"
+          | "hasCredentials"
+          | "status"
+          | "createdAt",
         order: table.order,
         page: table.page,
         limit: table.limit,
       })
-    ).finally(() => dispatch(clearBranchDataLoading()));
+    );
+    // If any of the dependencies below change again before this resolves
+    // (e.g. switching branches twice quickly), cancel it outright instead
+    // of letting a stale response race a newer one into the store.
+    return () => request.abort();
   }, [
     dispatch,
     table.search,

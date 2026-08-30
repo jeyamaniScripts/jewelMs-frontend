@@ -25,6 +25,9 @@ interface RequestOptions {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
   body?: unknown;
   auth?: boolean; // defaults to true — set false for login/register/forgot-password
+  /** Cancels this request if the caller's effect is cleaned up (e.g. a
+   *  branch switch superseding it) before the response arrives. */
+  signal?: AbortSignal;
   /** Internal — prevents infinite retry loops if the refreshed request also 401s. */
   _isRetry?: boolean;
 }
@@ -84,7 +87,7 @@ async function refreshAccessToken(): Promise<string | null> {
  * get their data or a genuine "you're logged out" failure.
  */
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = "GET", body, auth = true, _isRetry = false } = options;
+  const { method = "GET", body, auth = true, signal, _isRetry = false } = options;
 
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (auth) {
@@ -97,6 +100,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     headers,
     credentials: "include",
     body: body !== undefined ? JSON.stringify(body) : undefined,
+    signal,
   });
 
   if (response.status === 401 && auth && !_isRetry) {

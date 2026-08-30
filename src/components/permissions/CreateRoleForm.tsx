@@ -6,6 +6,7 @@ import type { MenuPermissions } from "@/constants/permissionActions";
 import { emptyMenuPermissions } from "@/lib/emptyPermissions";
 import { MENU_CONFIG } from "@/constants/menuConfig";
 import { createCustomRole } from "@/redux/slices/permissionSlice";
+import { showToast } from "@/redux/slices/toastSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 
 import Input from "@/components/ui/Input";
@@ -36,7 +37,10 @@ export default function CreateRoleForm({ onCreated }: { onCreated: (roleKey: str
   const handleSubmit = async () => {
     const result = await dispatch(createCustomRole({ label, permissions: draft }));
     if (createCustomRole.fulfilled.match(result)) {
+      dispatch(showToast("Role created successfully.", "success"));
       onCreated(result.payload.roleKey);
+    } else {
+      dispatch(showToast("Failed to create role. Please try again.", "error"));
     }
   };
 

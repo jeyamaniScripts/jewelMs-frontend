@@ -31,7 +31,7 @@ export default function NewShowroomPage() {
           />
         </div>
       ) : (
-        <ShowroomForm onCreated={() => dispatch(showToast("Showroom created", "success"))} />
+        <ShowroomForm onCreated={() => dispatch(showToast("Showroom created successfully.", "success"))} />
       )}
     </div>
   );

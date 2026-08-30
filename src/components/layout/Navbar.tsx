@@ -2,7 +2,12 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { MdMenu, MdKeyboardArrowDown, MdLogout, MdPerson } from "react-icons/md";
+import {
+  MdMenu,
+  MdKeyboardArrowDown,
+  MdLogout,
+  MdPerson,
+} from "react-icons/md";
 
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { openSidebar } from "@/redux/slices/uiSlice";
@@ -45,7 +50,7 @@ export default function Navbar() {
     : "?";
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-border bg-surface px-4 sm:px-6">
+    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-end border-b border-border bg-surface px-4 sm:px-6">
       <button
         type="button"
         onClick={() => dispatch(openSidebar())}
@@ -55,11 +60,13 @@ export default function Navbar() {
         <MdMenu size={22} />
       </button>
 
-      <div className="hidden lg:block">{user?.canViewAllBranches && <BranchSwitcher />}</div>
-
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
+        {user?.canViewAllBranches && <BranchSwitcher />}
         <ThemeToggle />
-        {role && ["super_admin", "brand_admin", "showroom_admin"].includes(role) && <NotificationBell />}
+        {role &&
+          ["super_admin", "brand_admin", "showroom_admin"].includes(role) && (
+            <NotificationBell />
+          )}
 
         <div className="relative" ref={menuRef}>
           <button

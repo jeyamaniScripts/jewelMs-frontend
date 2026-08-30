@@ -31,8 +31,8 @@ export default function TableHeaderCell<T>({
       >
         {column.header}
         <span className="flex flex-col -space-y-1">
-          <FiChevronUp size={12} className={isActive && order === "asc" ? "text-white" : "text-white/40"} />
-          <FiChevronDown size={12} className={isActive && order === "desc" ? "text-white" : "text-white/40"} />
+          <FiChevronUp size={15} className={isActive && order === "asc" ? "text-white" : "text-white/40"} />
+          <FiChevronDown size={15} className={isActive && order === "desc" ? "text-white" : "text-white/40"} />
         </span>
       </button>
     </th>

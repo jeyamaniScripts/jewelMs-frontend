@@ -34,9 +34,6 @@ interface ShowroomState {
   /** The branch currently selected in the switcher — persisted across
    *  reloads, defaults to the first branch the first time it loads. */
   selectedBranchId: string | null;
-  /** True from the moment the branch changes until whichever page reacted
-   *  to it confirms its own fetch is done — see clearBranchDataLoading. */
-  isBranchDataLoading: boolean;
 }
 
 const initialState: ShowroomState = {
@@ -49,7 +46,6 @@ const initialState: ShowroomState = {
 
   branchOptions: [],
   selectedBranchId: getStoredSelectedBranch(),
-  isBranchDataLoading: false,
 };
 
 function errorMessage(err: unknown, fallback: string): string {
@@ -59,7 +55,7 @@ function errorMessage(err: unknown, fallback: string): string {
 export interface ShowroomListQuery {
   brandId: string;
   search?: string;
-  sortBy?: "showroomName" | "shortName" | "createdAt" | "employeesCount";
+  sortBy?: "showroomName" | "shortName" | "managerName" | "contactEmail" | "employeesCount" | "createdAt" | "status";
   order?: "asc" | "desc";
   page?: number;
   limit?: number;
@@ -69,16 +65,22 @@ export interface ShowroomListQuery {
  *  but the backend derives the actual scope from the logged-in Brand Admin's
  *  own token — a Brand Admin can never fetch another brand's showrooms by
  *  passing a different id here. */
-export const fetchShowrooms = createAsyncThunk("showroom/fetchShowrooms", async (query: ShowroomListQuery) => {
-  const params = new URLSearchParams({ brandId: query.brandId });
-  if (query.search) params.set("search", query.search);
-  if (query.sortBy) params.set("sortBy", query.sortBy);
-  if (query.order) params.set("order", query.order);
-  if (query.page) params.set("page", String(query.page));
-  if (query.limit) params.set("limit", String(query.limit));
+export const fetchShowrooms = createAsyncThunk(
+  "showroom/fetchShowrooms",
+  async (query: ShowroomListQuery, { signal }) => {
+    const params = new URLSearchParams({ brandId: query.brandId });
+    if (query.search) params.set("search", query.search);
+    if (query.sortBy) params.set("sortBy", query.sortBy);
+    if (query.order) params.set("order", query.order);
+    if (query.page) params.set("page", String(query.page));
+    if (query.limit) params.set("limit", String(query.limit));
 
-  return apiRequest<{ showrooms: Showroom[]; pagination: PaginationMeta }>(`/showrooms?${params.toString()}`);
-});
+    return apiRequest<{ showrooms: Showroom[]; pagination: PaginationMeta }>(
+      `/showrooms?${params.toString()}`,
+      { signal }
+    );
+  }
+);
 
 /** Powers the navbar branch switcher — only called for Brand Admin / a
  *  main-branch Showroom Admin (the backend rejects anyone else). Fetches up
@@ -166,14 +168,7 @@ const showroomSlice = createSlice({
     },
     setSelectedBranch: (state, action: PayloadAction<string>) => {
       state.selectedBranchId = action.payload;
-      state.isBranchDataLoading = true;
       setStoredSelectedBranch(action.payload);
-    },
-    /** Whatever page reacted to the branch change calls this once its own
-     *  fetch settles — keeps the switcher's loader honest instead of a
-     *  guessed timeout. */
-    clearBranchDataLoading: (state) => {
-      state.isBranchDataLoading = false;
     },
   },
   extraReducers: (builder) => {
@@ -189,7 +184,8 @@ const showroomSlice = createSlice({
           state.pagination = action.payload.pagination;
         }
       )
-      .addCase(fetchShowrooms.rejected, (state) => {
+      .addCase(fetchShowrooms.rejected, (state, action) => {
+        if (action.meta.aborted) return;
         state.status = "failed";
         state.error = "Could not load showrooms";
       })
@@ -260,6 +256,5 @@ const showroomSlice = createSlice({
   },
 });
 
-export const { clearShowroomCredentials, clearActiveShowroom, setSelectedBranch, clearBranchDataLoading } =
-  showroomSlice.actions;
+export const { clearShowroomCredentials, clearActiveShowroom, setSelectedBranch } = showroomSlice.actions;
 export default showroomSlice.reducer;

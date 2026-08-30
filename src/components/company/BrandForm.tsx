@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { FiUser, FiMail, FiPhone, FiMapPin, FiHash, FiBriefcase, FiGlobe } from "react-icons/fi";
 
 import { brandSchema, type BrandFormValues } from "@/schemas/companySchemas";
-import { createBrand, updateBrand } from "@/redux/slices/companySlice";
+import { createBrand, updateBrand, updateMyBrand } from "@/redux/slices/companySlice";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 
 import Input from "@/components/ui/Input";
@@ -22,14 +22,17 @@ interface BrandFormProps {
   onCreated: () => void;
   /** Supply these two together to switch the form into edit mode. */
   editingBrandId?: string;
+  /** Company Details (Site Settings) — a Brand Admin editing their OWN
+   *  brand. Takes priority over editingBrandId if both are somehow set. */
+  isMyBrand?: boolean;
   defaultValues?: Partial<BrandFormValues>;
 }
 
-export default function BrandForm({ onCreated, editingBrandId, defaultValues }: BrandFormProps) {
+export default function BrandForm({ onCreated, editingBrandId, isMyBrand = false, defaultValues }: BrandFormProps) {
   const dispatch = useAppDispatch();
   const { status, error } = useAppSelector((state) => state.company);
   const isSubmitting = status === "loading";
-  const isEditing = !!editingBrandId;
+  const isEditing = isMyBrand || !!editingBrandId;
 
   const {
     register,
@@ -62,7 +65,12 @@ export default function BrandForm({ onCreated, editingBrandId, defaultValues }: 
   });
 
   const onSubmit = async (formValues: BrandFormValues) => {
-    if (isEditing) {
+    if (isMyBrand) {
+      const result = await dispatch(updateMyBrand(formValues));
+      if (updateMyBrand.fulfilled.match(result)) onCreated();
+      return;
+    }
+    if (isEditing && editingBrandId) {
       const result = await dispatch(updateBrand({ id: editingBrandId, formData: formValues }));
       if (updateBrand.fulfilled.match(result)) onCreated();
       return;

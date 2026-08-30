@@ -8,6 +8,8 @@ import {
   MdVpnKey,
   MdListAlt,
   MdPersonAdd,
+  MdBusiness,
+  MdCategory,
 } from "react-icons/md";
 import type { Role } from "@/types/auth";
 
@@ -44,8 +46,26 @@ export const MENU_CONFIG: MenuItem[] = [
     key: "site_settings",
     label: "Site Settings",
     icon: MdSettings,
-    path: "/site-settings",
+    path: "/site-settings/login-activity",
     roles: ["super_admin", "brand_admin"],
+    children: [
+      {
+        key: "site_settings_company_details",
+        label: "Company Details",
+        icon: MdBusiness,
+        path: "/site-settings/company-details",
+        // Brand Admin only — a Super Admin oversees many brands, not one,
+        // so they manage brands via the "Jewelry Brands" menu instead.
+        roles: ["brand_admin"],
+      },
+      {
+        key: "site_settings_login_activity",
+        label: "Login Activity",
+        icon: MdListAlt,
+        path: "/site-settings/login-activity",
+        roles: ["super_admin", "brand_admin"],
+      },
+    ],
   },
   {
     key: "brands",
@@ -89,6 +109,32 @@ export const MENU_CONFIG: MenuItem[] = [
         label: "Add Showroom",
         icon: MdPersonAdd,
         path: "/showrooms/new",
+        roles: ["brand_admin"],
+      },
+    ],
+  },
+  {
+    // Category is scoped to Brand Admin, same as Showrooms/Roles — it's
+    // brand-level master data. Product Group, Product Name, and Product
+    // Model will join as siblings here as each is built.
+    key: "inventory",
+    label: "Inventory",
+    icon: MdCategory,
+    path: "/inventory/categories",
+    roles: ["brand_admin"],
+    children: [
+      {
+        key: "inventory_categories",
+        label: "Categories",
+        icon: MdListAlt,
+        path: "/inventory/categories",
+        roles: ["brand_admin"],
+      },
+      {
+        key: "inventory_categories_new",
+        label: "Add Category",
+        icon: MdPersonAdd,
+        path: "/inventory/categories/new",
         roles: ["brand_admin"],
       },
     ],

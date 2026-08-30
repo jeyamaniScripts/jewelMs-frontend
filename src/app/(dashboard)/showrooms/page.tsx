@@ -22,16 +22,24 @@ export default function ShowroomsPage() {
 
   useEffect(() => {
     if (!brandId) return;
-    dispatch(
+    const request = dispatch(
       fetchShowrooms({
         brandId,
         search: table.search,
-        sortBy: table.sortBy as "showroomName" | "shortName" | "createdAt" | "employeesCount",
+        sortBy: table.sortBy as
+          | "showroomName"
+          | "shortName"
+          | "managerName"
+          | "contactEmail"
+          | "employeesCount"
+          | "createdAt"
+          | "status",
         order: table.order,
         page: table.page,
         limit: table.limit,
       })
     );
+    return () => request.abort();
   }, [dispatch, brandId, table.search, table.sortBy, table.order, table.page, table.limit]);
 
   return (

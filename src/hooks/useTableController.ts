@@ -2,11 +2,15 @@
 
 import { useCallback, useState } from "react";
 
-export function useTableController(defaultSortBy: string, defaultLimit = 10) {
+export function useTableController(
+  defaultSortBy: string,
+  defaultLimit = 10,
+  defaultOrder: "asc" | "desc" = "asc",
+) {
   const [page, setPage] = useState(1);
   const [limit, setLimitState] = useState(defaultLimit);
   const [sortBy, setSortBy] = useState(defaultSortBy);
-  const [order, setOrder] = useState<"asc" | "desc">("asc");
+  const [order, setOrder] = useState<"asc" | "desc">(defaultOrder);
   const [search, setSearchState] = useState("");
 
   /** Clicking the same column flips direction; a new column starts ascending. */
@@ -32,5 +36,15 @@ export function useTableController(defaultSortBy: string, defaultLimit = 10) {
     setPage(1);
   }, []);
 
-  return { page, setPage, limit, setLimit, sortBy, order, toggleSort, search, setSearch };
+  return {
+    page,
+    setPage,
+    limit,
+    setLimit,
+    sortBy,
+    order,
+    toggleSort,
+    search,
+    setSearch,
+  };
 }

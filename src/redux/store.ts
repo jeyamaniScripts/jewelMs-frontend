@@ -10,7 +10,7 @@ import sessionReducer from "@/redux/slices/sessionSlice";
 import dashboardReducer from "@/redux/slices/dashboardSlice";
 import notificationReducer from "@/redux/slices/notificationSlice";
 import tableLayoutReducer from "@/redux/slices/tableLayoutSlice";
-
+import categoryReducer from "./slices/categorySlice"
 export const store = configureStore({
   reducer: {
     auth: authReducer,
@@ -24,6 +24,7 @@ export const store = configureStore({
     dashboard: dashboardReducer,
     notification: notificationReducer,
     tableLayout: tableLayoutReducer,
+     category: categoryReducer,
   },
 });
 

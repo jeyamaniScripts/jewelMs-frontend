@@ -34,7 +34,17 @@ export interface EmployeeListQuery {
    *  Showroom Admin viewing via the switcher; the backend ignores/overrides
    *  this for anyone else. */
   showroomId?: string;
-  sortBy?: "fullName" | "createdAt" | "role" | "status";
+  sortBy?:
+    | "fullName"
+    | "email"
+    | "role"
+    | "department"
+    | "designation"
+    | "employeeType"
+    | "joiningDate"
+    | "hasCredentials"
+    | "status"
+    | "createdAt";
   order?: "asc" | "desc";
   page?: number;
   limit?: number;
@@ -42,19 +52,25 @@ export interface EmployeeListQuery {
 
 // The backend derives the real scope (brand + showroom, if applicable) from
 // the logged-in user's own token — this query is just search/filter/sort/paging.
-export const fetchEmployees = createAsyncThunk("employee/fetchEmployees", async (query: EmployeeListQuery = {}) => {
-  const params = new URLSearchParams();
-  if (query.search) params.set("search", query.search);
-  if (query.role) params.set("role", query.role);
-  if (query.showroomId) params.set("showroomId", query.showroomId);
-  if (query.sortBy) params.set("sortBy", query.sortBy);
-  if (query.order) params.set("order", query.order);
-  if (query.page) params.set("page", String(query.page));
-  if (query.limit) params.set("limit", String(query.limit));
+export const fetchEmployees = createAsyncThunk(
+  "employee/fetchEmployees",
+  async (query: EmployeeListQuery = {}, { signal }) => {
+    const params = new URLSearchParams();
+    if (query.search) params.set("search", query.search);
+    if (query.role) params.set("role", query.role);
+    if (query.showroomId) params.set("showroomId", query.showroomId);
+    if (query.sortBy) params.set("sortBy", query.sortBy);
+    if (query.order) params.set("order", query.order);
+    if (query.page) params.set("page", String(query.page));
+    if (query.limit) params.set("limit", String(query.limit));
 
-  const qs = params.toString();
-  return apiRequest<{ employees: Employee[]; pagination: PaginationMeta }>(`/employees${qs ? `?${qs}` : ""}`);
-});
+    const qs = params.toString();
+    return apiRequest<{ employees: Employee[]; pagination: PaginationMeta }>(
+      `/employees${qs ? `?${qs}` : ""}`,
+      { signal }
+    );
+  }
+);
 
 export const fetchEmployeeById = createAsyncThunk("employee/fetchEmployeeById", async (id: string) => {
   const { employee } = await apiRequest<{ employee: Employee }>(`/employees/${id}`);
@@ -154,7 +170,8 @@ const employeeSlice = createSlice({
           state.pagination = action.payload.pagination;
         }
       )
-      .addCase(fetchEmployees.rejected, (state) => {
+      .addCase(fetchEmployees.rejected, (state, action) => {
+        if (action.meta.aborted) return; // superseded by a newer request — not a real failure
         state.status = "failed";
         state.error = "Could not load employees";
       })
