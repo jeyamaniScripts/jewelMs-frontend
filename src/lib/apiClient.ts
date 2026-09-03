@@ -4,7 +4,7 @@ import {
   clearStoredToken,
 } from "@/lib/tokenStorage";
 
-const API_BASE_URL = process.env.NEXT_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 export class ApiClientError extends Error {
   statusCode: number;
