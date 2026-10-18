@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FiUser, FiMail, FiPhone, FiMapPin, FiHash, FiBriefcase, FiDollarSign } from "react-icons/fi";
@@ -22,6 +22,7 @@ import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
 import ImageUpload from "@/components/ui/ImageUpload";
 import FormSection from "@/components/ui/FormSection";
+import DateRangePicker from "../ui/DateRangePicker";
 
 // Desktop shows up to 4 fields per row — short fields take 1 column,
 // longer ones span 2.
@@ -132,7 +133,7 @@ export default function EmployeeForm({
       ...defaultValues,
     },
   });
-
+ const [dateRange, setDateRange] = useState({ startDate: "", endDate: "" });
   const selectedRole = watch("role") as Role | "";
   const wantsCredentials = watch("wantsCredentials");
   const passwordMode = watch("passwordMode");
@@ -393,6 +394,14 @@ export default function EmployeeForm({
             {...register("emergencyContactNumber")}
           />
         </div>
+          <DateRangePicker
+        label="Filter by date"
+        startDate={dateRange.startDate}
+        endDate={dateRange.endDate}
+        onChange={setDateRange}
+        minDate={new Date("2024-01-01")}
+        maxDate={new Date("2026-12-31")}
+      />
       </div>
 
       <FormSection title="Role & Access" />

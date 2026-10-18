@@ -183,7 +183,7 @@ export default function DataTable<T>({
       </div>
 
       {/* Desktop table */}
-      <div className="hidden overflow-x-auto border border-border bg-surface shadow-card md:block">
+      {/* <div className="hidden overflow-x-auto border border-border bg-surface shadow-card md:block">
         <table className="w-full min-w-[720px] border-collapse text-sm">
           <thead>
             <tr className="bg-primary-dark">
@@ -278,8 +278,106 @@ export default function DataTable<T>({
             </tfoot>
           )}
         </table>
-      </div>
+      </div> */}
+{/* Desktop table */}
+<div className="hidden overflow-hidden border border-border bg-surface shadow-card md:block">
+  <div className="max-h-[520px] overflow-y-auto overflow-x-auto">
+    <table className="w-full min-w-[720px] border-collapse text-sm">
+      <thead className="sticky top-0 z-10">
+        <tr className="bg-primary-dark">
+          {rowSelection && (
+            <th className="w-10 bg-primary-dark px-4 py-3.5">
+              <SelectAllCheckbox
+                checked={rowSelection.isAllVisibleSelected}
+                indeterminate={rowSelection.isSomeVisibleSelected}
+                onChange={rowSelection.toggleAllVisible}
+              />
+            </th>
+          )}
+          {visibleColumns.map((column) => (
+            <TableHeaderCell
+              key={column.key}
+              column={column}
+              isActive={sortBy === column.key}
+              order={order}
+              onSort={() => onSortChange(column.key)}
+            />
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {isLoading &&
+          Array.from({ length: skeletonRowCount }).map((_, rowIndex) => (
+            <tr key={`skeleton-${rowIndex}`} className="border-b border-border last:border-0">
+              {rowSelection && <SkeletonCell />}
+              {visibleColumns.map((column) => (
+                <SkeletonCell key={column.key} />
+              ))}
+            </tr>
+          ))}
 
+        {isEmpty && (
+          <tr>
+            <td
+              colSpan={visibleColumns.length + (rowSelection ? 1 : 0)}
+              className="px-4 py-16 text-center text-ink-muted"
+            >
+              {emptyMessage}
+            </td>
+          </tr>
+        )}
+
+        {!isLoading &&
+          sortedRows.map((row) => {
+            const rowId = keyField(row);
+            const isSelected = rowSelection?.selectedIds.has(rowId) ?? false;
+            return (
+              <tr
+                key={rowId}
+                className={`border-b border-border last:border-0 hover:bg-surface-tint/50 ${
+                  isSelected ? "bg-primary/5" : ""
+                }`}
+              >
+                {rowSelection && (
+                  <td className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => rowSelection.toggleRow(rowId)}
+                      className="h-4 w-4 cursor-pointer rounded accent-primary"
+                      aria-label="Select row"
+                    />
+                  </td>
+                )}
+                {visibleColumns.map((column) => (
+                  <td
+                    key={column.key}
+                    className={`px-4 py-3 ${
+                      column.align === "right" ? "text-right" : column.align === "center" ? "text-center" : ""
+                    }`}
+                  >
+                    {column.render(row)}
+                  </td>
+                ))}
+              </tr>
+            );
+          })}
+      </tbody>
+      {showFooter && !isLoading && !isEmpty && (
+        <tfoot className="sticky bottom-0 z-10">
+          <tr className="border-t-2 border-border bg-surface-tint font-medium text-ink">
+            {rowSelection && <td className="px-4 py-3" />}
+            {visibleColumns.map((column) => (
+              <td key={column.key} className={`bg-surface-tint px-4 py-3 ${column.align === "right" ? "text-right" : ""}`}>
+                {column.footer ? column.footer(sortedRows) : null}
+              </td>
+            ))}
+          </tr>
+        </tfoot>
+      )}
+    </table>
+  </div>
+</div>
       {/* Mobile cards */}
       <div className="space-y-3 md:hidden">
         {isLoading &&

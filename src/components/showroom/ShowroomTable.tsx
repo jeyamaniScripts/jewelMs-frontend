@@ -10,6 +10,8 @@ import { deleteShowroom, regenerateShowroomCredentials, toggleShowroomStatus } f
 import { showToast } from "@/redux/slices/toastSlice";
 import DataTable from "@/components/ui/table/DataTable";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { useSiteFormatters } from "@/components/layout/SiteFormatProvider";
+import type { SiteFormatters } from "@/lib/siteFormatters";
 
 function StatusBadge({ status }: { status: Showroom["status"] }) {
   const active = status === "active";
@@ -104,7 +106,7 @@ function ShowroomActions({ showroom }: { showroom: Showroom }) {
   );
 }
 
-const COLUMNS: ColumnDef<Showroom>[] = [
+const createColumns = (formatters: SiteFormatters): ColumnDef<Showroom>[] => [
   {
     key: "showroomName",
     header: "Showroom",
@@ -168,9 +170,9 @@ const COLUMNS: ColumnDef<Showroom>[] = [
     header: "Created",
     sortable: true,
     defaultVisible: false,
-    render: (s) => new Date(s.createdAt).toLocaleDateString(),
+    render: (s) => formatters.date(s.createdAt),
     sortValue: (s) => new Date(s.createdAt).getTime(),
-    exportValue: (s) => new Date(s.createdAt).toLocaleDateString(),
+    exportValue: (s) => formatters.date(s.createdAt),
   },
   {
     key: "status",
@@ -201,12 +203,14 @@ export default function ShowroomTable({
   onLimitChange: (limit: number) => void;
   isLoading?: boolean;
 }) {
+  const formatters = useSiteFormatters();
+  const columns = createColumns(formatters);
   const [visibleColumnKeys, setVisibleColumnKeys] = useState(
-    COLUMNS.filter((c) => c.defaultVisible !== false).map((c) => c.key)
+    columns.filter((c) => c.defaultVisible !== false).map((c) => c.key)
   );
 
   const columnsWithActions: ColumnDef<Showroom>[] = [
-    ...COLUMNS,
+    ...columns,
     {
       key: "actions",
       header: "Actions",

@@ -9,25 +9,25 @@ import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 const VARIANT_CONFIG: Record<ToastVariant, { title: string; wrap: string; badge: string; Icon: typeof FiCheck }> = {
   success: {
     title: "Success!",
-    wrap: "bg-success/10 border-success/30",
+    wrap: "bg-success-subtle border-success/40",
     badge: "bg-success",
     Icon: FiCheck,
   },
   error: {
     title: "Something Went Wrong!",
-    wrap: "bg-danger/10 border-danger/30",
+    wrap: "bg-danger-subtle border-danger/40",
     badge: "bg-danger",
     Icon: FiX,
   },
   warning: {
     title: "Warning!",
-    wrap: "bg-warning/10 border-warning/30",
+    wrap: "bg-warning-subtle border-warning/40",
     badge: "bg-warning",
     Icon: FiAlertTriangle,
   },
   info: {
     title: "Info",
-    wrap: "bg-primary/10 border-primary/30",
+    wrap: "bg-info-subtle border-primary/40",
     badge: "bg-primary",
     Icon: FiInfo,
   },

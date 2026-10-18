@@ -30,6 +30,8 @@ import Modal from "@/components/ui/Modal";
 import EmployeeDetails from "@/components/employee/EmployeeDetails";
 import { useRowSelection } from "@/hooks/useRowSelection";
 import Button from "@/components/ui/Button";
+import { useSiteFormatters } from "@/components/layout/SiteFormatProvider";
+import type { SiteFormatters } from "@/lib/siteFormatters";
 
 function StatusBadge({ status }: { status: Employee["status"] }) {
   const active = status === "active";
@@ -171,7 +173,7 @@ function EmployeeActions({ employee, onView }: { employee: Employee; onView: () 
   );
 }
 
-const COLUMNS: ColumnDef<Employee>[] = [
+const createColumns = (formatters: SiteFormatters): ColumnDef<Employee>[] => [
   {
     key: "fullName",
     header: "Employee",
@@ -232,9 +234,9 @@ const COLUMNS: ColumnDef<Employee>[] = [
     header: "Joining date",
     sortable: true,
     defaultVisible: false,
-    render: (e) => (e.joiningDate ? new Date(e.joiningDate).toLocaleDateString() : "—"),
+    render: (e) => (e.joiningDate ? formatters.date(e.joiningDate) : "—"),
     sortValue: (e) => (e.joiningDate ? new Date(e.joiningDate).getTime() : 0),
-    exportValue: (e) => (e.joiningDate ? new Date(e.joiningDate).toLocaleDateString() : ""),
+    exportValue: (e) => (e.joiningDate ? formatters.date(e.joiningDate) : ""),
   },
   {
     key: "hasCredentials",
@@ -269,8 +271,10 @@ export default function EmployeeTable({
   scopeLabel?: string;
 }) {
   const dispatch = useAppDispatch();
+  const formatters = useSiteFormatters();
+  const columns = createColumns(formatters);
   const [visibleColumnKeys, setVisibleColumnKeys] = useState(
-    COLUMNS.filter((c) => c.defaultVisible !== false).map((c) => c.key)
+    columns.filter((c) => c.defaultVisible !== false).map((c) => c.key)
   );
   const [viewingEmployee, setViewingEmployee] = useState<Employee | null>(null);
   const selection = useRowSelection(employees, (e) => e.id);
@@ -322,7 +326,7 @@ export default function EmployeeTable({
     );
 
   const columnsWithActions: ColumnDef<Employee>[] = [
-    ...COLUMNS,
+    ...columns,
     {
       key: "actions",
       header: "Actions",

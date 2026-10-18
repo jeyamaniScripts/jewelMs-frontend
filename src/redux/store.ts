@@ -10,7 +10,12 @@ import sessionReducer from "@/redux/slices/sessionSlice";
 import dashboardReducer from "@/redux/slices/dashboardSlice";
 import notificationReducer from "@/redux/slices/notificationSlice";
 import tableLayoutReducer from "@/redux/slices/tableLayoutSlice";
-import categoryReducer from "./slices/categorySlice"
+import categoryReducer from "@/redux/slices/categorySlice";
+import productGroupReducer from "@/redux/slices/productGroupSlice";
+import productNameReducer from "@/redux/slices/productNameSlice";
+import productModelReducer from "@/redux/slices/productModelSlice";
+import supplierReducer from "@/redux/slices/supplierSlice"
+import purchaseReducer from "@/redux/slices/purchaseSlice";
 export const store = configureStore({
   reducer: {
     auth: authReducer,
@@ -24,7 +29,12 @@ export const store = configureStore({
     dashboard: dashboardReducer,
     notification: notificationReducer,
     tableLayout: tableLayoutReducer,
-     category: categoryReducer,
+    category: categoryReducer,
+    productGroup: productGroupReducer,
+    productName: productNameReducer,
+    productModel: productModelReducer,
+    supplier: supplierReducer,
+    purchase: purchaseReducer,
   },
 });
 

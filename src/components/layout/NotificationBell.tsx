@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { MdNotifications, MdPersonAdd, MdPersonRemove, MdEdit, MdVpnKey, MdStorefront, MdDiamond } from "react-icons/md";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import {
@@ -13,7 +14,7 @@ import type { AppNotification, NotificationType } from "@/types/notification";
 
 const POLL_INTERVAL_MS = 25000;
 
-const TYPE_ICON: Record<NotificationType, typeof MdPersonAdd> = {
+const TYPE_ICON: Partial<Record<NotificationType, typeof MdPersonAdd>> = {
   employee_created: MdPersonAdd,
   employee_deleted: MdPersonRemove,
   employee_updated: MdEdit,
@@ -61,6 +62,7 @@ function NotificationRow({ notification, onRead }: { notification: AppNotificati
 export default function NotificationBell() {
   const dispatch = useAppDispatch();
   const { notifications, unreadCount } = useAppSelector((state) => state.notification);
+  const role = useAppSelector((state) => state.auth.role);
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -100,7 +102,7 @@ export default function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 z-30 mt-2 max-h-[28rem] w-80 overflow-y-auto rounded-2xl border border-border bg-surface p-2 shadow-floating sm:w-96">
+        <div className="absolute right-0 z-30 mt-2 max-h-[28rem] w-[min(20rem,calc(100vw-1rem))] overflow-y-auto rounded-2xl border border-border bg-surface p-2 shadow-floating sm:w-96">
           <div className="flex items-center justify-between px-2 py-1.5">
             <p className="font-heading text-sm font-semibold text-ink">Notifications</p>
             {unreadCount > 0 && (
@@ -126,6 +128,15 @@ export default function NotificationBell() {
                 />
               ))}
             </div>
+          )}
+          {role === "brand_admin" && (
+            <Link
+              href="/admin-settings/notifications"
+              onClick={() => setIsOpen(false)}
+              className="mt-2 block rounded-lg border-t border-border px-3 py-2.5 text-center text-sm font-semibold text-primary hover:bg-surface-tint"
+            >
+              Manage notifications and history
+            </Link>
           )}
         </div>
       )}

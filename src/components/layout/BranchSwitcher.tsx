@@ -19,16 +19,18 @@ const ACK_DURATION_MS = 500;
 
 export default function BranchSwitcher() {
   const dispatch = useAppDispatch();
-  const brandId = useAppSelector((state) => state.auth.user?.brandId);
-  const { branchOptions, selectedBranchId, status } = useAppSelector((state) => state.showroom);
+  const user = useAppSelector((state) => state.auth.user);
+  const canSwitchBranches = user?.canViewAllBranches === true;
+  const brandId = user?.brandId;
+  const { branchOptions, selectedBranchId, branchOptionsStatus } = useAppSelector((state) => state.showroom);
   const [isAcknowledging, setIsAcknowledging] = useState(false);
 
   useEffect(() => {
-    if (!brandId) return;
+    if (!canSwitchBranches || !brandId) return;
     dispatch(fetchBranchOptions(brandId))
       .unwrap()
       .catch(() => dispatch(showToast("Could not load your branch list", "error")));
-  }, [dispatch, brandId]);
+  }, [dispatch, brandId, canSwitchBranches]);
 
   const options = useMemo(
     () =>
@@ -45,17 +47,27 @@ export default function BranchSwitcher() {
     window.setTimeout(() => setIsAcknowledging(false), ACK_DURATION_MS);
   };
 
-  if (status === "idle" || (status === "loading" && branchOptions.length === 0)) return null;
-  if (branchOptions.length === 0) return null;
+  const fixedBranch = user?.showroomId
+    ? [{ value: user.showroomId, label: user.showroomName || "Current branch" }]
+    : [];
+  const visibleOptions = canSwitchBranches ? options : fixedBranch;
+  const value = canSwitchBranches ? selectedBranchId ?? "" : user?.showroomId ?? "";
+  const isLoading = canSwitchBranches && branchOptionsStatus === "loading";
 
   return (
-    <div className="flex w-32 items-center gap-1.5 sm:w-44 sm:gap-2 md:w-52">
+    <div className="flex w-[min(25vw,7rem)] min-w-[4.75rem] items-center gap-1 sm:w-44 sm:gap-2 md:w-52">
       {isAcknowledging ? (
-        <FiLoader size={18} className="shrink-0 animate-spin text-primary" />
+        <FiLoader size={18} className="hidden shrink-0 animate-spin text-primary sm:block" />
       ) : (
-        <MdStorefront size={18} className="shrink-0 text-ink-muted" />
+        <MdStorefront size={18} className="hidden shrink-0 text-ink-muted sm:block" />
       )}
-      <Dropdown options={options} value={selectedBranchId ?? ""} onChange={handleChange} placeholder="Select branch" />
+      <Dropdown
+        options={visibleOptions}
+        value={value}
+        onChange={handleChange}
+        placeholder={isLoading ? "Loading..." : canSwitchBranches ? "Select branch" : "Branch"}
+        disabled={!canSwitchBranches || isLoading || visibleOptions.length === 0}
+      />
     </div>
   );
 }

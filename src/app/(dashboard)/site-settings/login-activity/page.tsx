@@ -10,12 +10,10 @@ import { useTableController } from "@/hooks/useTableController";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { fetchActiveSessionsSummary, fetchActiveSessions } from "@/redux/slices/sessionSlice";
 import type { ActiveSessionEntry } from "@/types/session";
+import { useSiteFormatters } from "@/components/layout/SiteFormatProvider";
+import type { SiteFormatters } from "@/lib/siteFormatters";
 
-function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-}
-
-const COLUMNS: ColumnDef<ActiveSessionEntry>[] = [
+const createColumns = (formatters: SiteFormatters): ColumnDef<ActiveSessionEntry>[] => [
   {
     key: "user",
     header: "User",
@@ -35,17 +33,17 @@ const COLUMNS: ColumnDef<ActiveSessionEntry>[] = [
     key: "createdAt",
     header: "Login time",
     sortable: true,
-    render: (entry) => formatDateTime(entry.loginAt),
+    render: (entry) => formatters.dateTime(entry.loginAt),
     sortValue: (entry) => new Date(entry.loginAt).getTime(),
-    exportValue: (entry) => formatDateTime(entry.loginAt),
+    exportValue: (entry) => formatters.dateTime(entry.loginAt),
   },
   {
     key: "lastUsedAt",
     header: "Last active",
     sortable: true,
-    render: (entry) => formatDateTime(entry.lastUsedAt),
+    render: (entry) => formatters.dateTime(entry.lastUsedAt),
     sortValue: (entry) => new Date(entry.lastUsedAt).getTime(),
-    exportValue: (entry) => formatDateTime(entry.lastUsedAt),
+    exportValue: (entry) => formatters.dateTime(entry.lastUsedAt),
   },
   {
     key: "ipAddress",
@@ -67,12 +65,14 @@ const COLUMNS: ColumnDef<ActiveSessionEntry>[] = [
 
 export default function SiteSettingsPage() {
   const dispatch = useAppDispatch();
+  const formatters = useSiteFormatters();
+  const columns = createColumns(formatters);
   const currentRole = useAppSelector((state) => state.auth.role);
   const { summary, activeSessions, pagination, status } = useAppSelector((state) => state.session);
   // Starts sorted by "most recently active first" — matches what this page showed before sorting existed.
   const table = useTableController("lastUsedAt", 10, "desc");
   const [visibleColumnKeys, setVisibleColumnKeys] = useState(
-    COLUMNS.filter((c) => c.defaultVisible !== false).map((c) => c.key)
+    columns.filter((c) => c.defaultVisible !== false).map((c) => c.key)
   );
 
   useEffect(() => {
@@ -118,7 +118,7 @@ export default function SiteSettingsPage() {
       <h2 className="text-h4 mb-3">Currently logged in</h2>
 
       <DataTable
-        columns={COLUMNS}
+        columns={columns}
         rows={activeSessions}
         keyField={(entry) => entry.id}
         sortBy={table.sortBy}
@@ -139,8 +139,8 @@ export default function SiteSettingsPage() {
             <p className="font-medium text-ink">{entry.user?.fullName ?? "Deleted user"}</p>
             <p className="text-caption text-ink-muted">{entry.user?.email}</p>
             <div className="mt-3 space-y-1 text-sm text-ink-muted">
-              <p>Logged in: {formatDateTime(entry.loginAt)}</p>
-              <p>Last active: {formatDateTime(entry.lastUsedAt)}</p>
+              <p>Logged in: {formatters.dateTime(entry.loginAt)}</p>
+              <p>Last active: {formatters.dateTime(entry.lastUsedAt)}</p>
               <p>{entry.ipAddress}</p>
             </div>
           </div>

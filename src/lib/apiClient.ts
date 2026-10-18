@@ -4,7 +4,13 @@ import {
   clearStoredToken,
 } from "@/lib/tokenStorage";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+
+export function resolveApiAssetUrl(url: string): string {
+  if (!url.startsWith("/uploads/") || !/^https?:\/\//i.test(API_BASE_URL)) return url;
+  return new URL(url, API_BASE_URL).toString();
+}
 
 export class ApiClientError extends Error {
   statusCode: number;
@@ -106,9 +112,9 @@ export async function apiRequest<T>(
     _isRetry = false,
   } = options;
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
+  const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
+  const headers: Record<string, string> = {};
+  if (!isFormData) headers["Content-Type"] = "application/json";
   if (auth) {
     const token = getStoredToken();
     if (token) headers.Authorization = `Bearer ${token}`;
@@ -118,7 +124,12 @@ export async function apiRequest<T>(
     method,
     headers,
     credentials: "include",
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body:
+      body === undefined
+        ? undefined
+        : isFormData
+          ? body
+          : JSON.stringify(body),
     signal,
   });
 

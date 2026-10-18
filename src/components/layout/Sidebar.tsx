@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useId } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MdDiamond, MdChevronLeft, MdChevronRight, MdClose, MdExpandMore } from "react-icons/md";
+import { MdDiamond, MdChevronLeft, MdChevronRight, MdClose, MdExpandMore, MdSearch } from "react-icons/md";
+import { FiX } from "react-icons/fi";
 
 import { MENU_CONFIG, type MenuItem } from "@/constants/menuConfig";
+import type { Role } from "@/types/auth";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { closeSidebar, toggleSidebarCollapsed } from "@/redux/slices/uiSlice";
 
@@ -14,25 +17,58 @@ function isItemActive(item: MenuItem, pathname: string): boolean {
   return !!item.children?.some((child) => isItemActive(child, pathname));
 }
 
+function filterMenuItems(
+  items: MenuItem[],
+  role: Role | null,
+  isMainBranchSelected: boolean,
+): MenuItem[] {
+  return items.flatMap((item) => {
+    if (
+      !role ||
+      !item.roles.includes(role) ||
+      (item.branchAccess === "main" && !isMainBranchSelected)
+    ) {
+      return [];
+    }
+
+    const children = item.children
+      ? filterMenuItems(item.children, role, isMainBranchSelected)
+      : undefined;
+    if (item.children && !children?.length) return [];
+
+    return [{ ...item, children }];
+  });
+}
+
 export default function Sidebar() {
   const pathname = usePathname();
   const dispatch = useAppDispatch();
   const role = useAppSelector((state) => state.auth.role);
+  const user = useAppSelector((state) => state.auth.user);
+  const branchOptions = useAppSelector((state) => state.showroom.branchOptions);
+  const selectedBranchId = useAppSelector((state) => state.showroom.selectedBranchId);
   const sidebarOpen = useAppSelector((state) => state.ui.sidebarOpen);
   const collapsed = useAppSelector((state) => state.ui.sidebarCollapsed);
+  const [search, setSearch] = useState("");
+  const searchId = useId();
+  const companyName =
+    user?.companyName || user?.companyShortName || "Ashira Jewels";
 
-  const items = MENU_CONFIG.filter((item) => role && item.roles.includes(role));
+  const selectedBranch = branchOptions.find((branch) => branch.id === selectedBranchId);
+  const isMainBranchSelected = selectedBranch?.isMainBranch === true;
+  const items = filterMenuItems(MENU_CONFIG, role, isMainBranchSelected);
+  const query = search.trim().toLocaleLowerCase();
+  const filteredItems = items.flatMap((item) => {
+    const children = item.children;
+    if (!query) return [{ ...item, children }];
+    if (item.label.toLocaleLowerCase().includes(query)) return [{ ...item, children }];
+    const matches = children?.filter((child) =>
+      child.label.toLocaleLowerCase().includes(query),
+    );
+    return matches?.length ? [{ ...item, children: matches }] : [];
+  });
 
-  // Auto-expand whichever group contains the active route.
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  useEffect(() => {
-    const next: Record<string, boolean> = {};
-    items.forEach((item) => {
-      if (item.children && isItemActive(item, pathname)) next[item.key] = true;
-    });
-    setExpanded((prev) => ({ ...prev, ...next }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname]);
 
   const toggleGroup = (key: string) =>
     setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -45,7 +81,7 @@ export default function Sidebar() {
    * so collapsing on desktop then shrinking to mobile left the drawer stuck
    * in icon-only mode too. Passing it explicitly per-render fixes that.
    */
-  function renderNav(isCollapsed: boolean) {
+  function renderNav(isCollapsed: boolean, navId: string) {
     return (
       <div className="flex h-full flex-col bg-surface">
         {/* Logo row */}
@@ -56,7 +92,7 @@ export default function Sidebar() {
             </div>
             {!isCollapsed && (
               <span className="truncate font-heading text-[15px] font-medium text-ink">
-                Ashira Jewels
+                {companyName}
               </span>
             )}
           </div>
@@ -72,15 +108,41 @@ export default function Sidebar() {
         </div>
 
         {/* Menu */}
+        {!isCollapsed && (
+          <div className="shrink-0 px-2 pt-3">
+            <label className="sr-only" htmlFor={`${navId}-menu-search`}>Search menu</label>
+            <div className="relative">
+              <MdSearch size={17} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-muted" />
+              <input
+                id={`${navId}-menu-search`}
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Search menu"
+                autoComplete="off"
+                className="w-full rounded-lg border border-border bg-surface py-2 pl-8 pr-8 text-sm text-ink placeholder:text-ink-muted/70 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  aria-label="Clear menu search"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-ink-muted hover:bg-surface-tint hover:text-ink"
+                >
+                  <FiX size={14} />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-3">
-          {items.map((item) => {
+          {filteredItems.map((item) => {
             const Icon = item.icon;
             const active = isItemActive(item, pathname);
-            const visibleChildren = item.children?.filter(
-              (child) => role && child.roles.includes(role)
-            );
+            const visibleChildren = item.children;
             const hasChildren = !!visibleChildren?.length;
-            const isOpen = !!expanded[item.key];
+            const isOpen = Boolean(query) || (expanded[item.key] ?? active);
 
             if (hasChildren) {
               return (
@@ -150,6 +212,11 @@ export default function Sidebar() {
               </Link>
             );
           })}
+          {query && filteredItems.length === 0 && (
+            <p className="px-2.5 py-4 text-sm text-ink-muted">
+              No menu items match “{search}”.
+            </p>
+          )}
         </nav>
 
         {/* Desktop collapse toggle — hidden via CSS below lg, so it's a no-op in the mobile drawer */}
@@ -172,7 +239,7 @@ export default function Sidebar() {
         className={`sticky top-0 hidden h-screen shrink-0 border-r border-border transition-all duration-200 lg:block
           ${collapsed ? "w-[72px]" : "w-60"}`}
       >
-        {renderNav(collapsed)}
+        {renderNav(collapsed, `${searchId}-desktop`)}
       </div>
 
       {/* Mobile drawer + branded backdrop — ALWAYS expanded, ignores the desktop collapse state */}
@@ -188,7 +255,7 @@ export default function Sidebar() {
           shadow-floating transition-transform duration-200 lg:hidden
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
-        {renderNav(false)}
+        {renderNav(false, `${searchId}-mobile`)}
       </div>
     </>
   );

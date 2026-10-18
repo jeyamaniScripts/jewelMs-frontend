@@ -31,8 +31,9 @@ interface ShowroomState {
    *  paginated/searched/sorted view. Only fetched for Brand Admin / a
    *  main-branch Showroom Admin. */
   branchOptions: Showroom[];
+  branchOptionsStatus: "idle" | "loading" | "succeeded" | "failed";
   /** The branch currently selected in the switcher — persisted across
-   *  reloads, defaults to the first branch the first time it loads. */
+   *  reloads, defaults to the main branch when one exists. */
   selectedBranchId: string | null;
 }
 
@@ -45,6 +46,7 @@ const initialState: ShowroomState = {
   lastCreatedCredentials: null,
 
   branchOptions: [],
+  branchOptionsStatus: "idle",
   selectedBranchId: getStoredSelectedBranch(),
 };
 
@@ -245,13 +247,20 @@ const showroomSlice = createSlice({
       })
 
       .addCase(fetchBranchOptions.fulfilled, (state, action: PayloadAction<Showroom[]>) => {
+        state.branchOptionsStatus = "succeeded";
         state.branchOptions = action.payload;
         const stillValid = state.selectedBranchId && action.payload.some((b) => b.id === state.selectedBranchId);
         if (!stillValid) {
-          const firstBranch = action.payload[0];
-          state.selectedBranchId = firstBranch ? firstBranch.id : null;
+          const defaultBranch = action.payload.find((branch) => branch.isMainBranch) ?? action.payload[0];
+          state.selectedBranchId = defaultBranch ? defaultBranch.id : null;
           setStoredSelectedBranch(state.selectedBranchId);
         }
+      })
+      .addCase(fetchBranchOptions.pending, (state) => {
+        state.branchOptionsStatus = "loading";
+      })
+      .addCase(fetchBranchOptions.rejected, (state) => {
+        state.branchOptionsStatus = "failed";
       });
   },
 });

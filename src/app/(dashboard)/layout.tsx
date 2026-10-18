@@ -3,6 +3,7 @@ import AuthGuard from "@/components/layout/AuthGuard";
 import Sidebar from "@/components/layout/Sidebar";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import SiteFormatProvider from "@/components/layout/SiteFormatProvider";
 
 /**
  * Fixed-height shell: Sidebar + (Navbar, scrollable main, Footer) all live
@@ -13,15 +14,17 @@ import Footer from "@/components/layout/Footer";
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <AuthGuard>
-      <div className="flex h-screen w-full overflow-hidden bg-surface-tint">
-        <Sidebar />
+      <SiteFormatProvider>
+        <div className="flex h-screen w-full overflow-hidden bg-surface-tint">
+          <Sidebar />
 
-        <div className="flex h-screen w-full flex-1 flex-col overflow-hidden">
-          <Navbar />
-          <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">{children}</main>
-          <Footer />
+          <div className="flex h-screen min-w-0 w-full flex-1 flex-col overflow-hidden">
+            <Navbar />
+            <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-3 py-4 sm:px-6 sm:py-6 lg:px-8">{children}</main>
+            <Footer />
+          </div>
         </div>
-      </div>
+      </SiteFormatProvider>
     </AuthGuard>
   );
 }

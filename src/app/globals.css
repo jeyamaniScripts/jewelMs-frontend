@@ -24,6 +24,10 @@
   --ink-muted-base: #9FC7C5;
   --border-base: #1F3B3E;
   --card-shadow-base: rgba(0, 0, 0, 0.30);
+  --color-success-subtle: #12351F;
+  --color-danger-subtle: #3A1717;
+  --color-warning-subtle: #382910;
+  --color-info-subtle: #142A40;
 }
 
 /* ---- Tailwind design tokens — reference the raw vars above ---- */
@@ -44,6 +48,10 @@
   --color-success: #16A34A;
   --color-danger: #DC2626;
   --color-warning: #D97706;
+  --color-success-subtle: #F0FDF4;
+  --color-danger-subtle: #FEF2F2;
+  --color-warning-subtle: #FFFBEB;
+  --color-info-subtle: #EFF6FF;
 
   --font-heading: var(--font-heading-sans), sans-serif;
   --font-body: var(--font-body-sans), sans-serif;
@@ -55,6 +63,24 @@
 }
 
 @layer components {
+  .master-data-scroll {
+    scrollbar-color: var(--color-primary-light) transparent;
+    scrollbar-width: thin;
+  }
+
+  .master-data-scroll::-webkit-scrollbar {
+    width: 7px;
+  }
+
+  .master-data-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .master-data-scroll::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: var(--color-primary-light);
+  }
+
   /* Screen-based type scale: sizes step up at sm/lg instead of staying fixed.
      Same class names as before (text-h1..text-caption) — every existing
      usage across the app picks this up automatically, nothing else changes. */

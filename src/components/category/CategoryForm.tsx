@@ -4,16 +4,16 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { FiTag, FiHash, FiPercent, FiFileText } from "react-icons/fi";
 
-import { categorySchema, METAL_TYPE_OPTIONS, type CategoryFormValues } from "@/schemas/categorySchemas";
+import { categorySchema, type CategoryFormValues } from "@/schemas/categorySchemas";
 import { createCategory, updateCategory } from "@/redux/slices/categorySlice";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import Alert from "@/components/ui/Alert";
-import Dropdown from "@/components/ui/Dropdown";
+import ImageUpload from "@/components/ui/ImageUpload";
 
-const FIELD_GRID = "grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4";
+const FIELD_GRID = "grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3";
 
 interface CategoryFormProps {
   onSaved: () => void;
@@ -38,9 +38,9 @@ export default function CategoryForm({ onSaved, editingCategoryId, defaultValues
     defaultValues: {
       categoryName: "",
       categoryCode: "",
-      metalType: "gold",
       hsnCode: "",
       defaultGstRate: "3",
+      categoryImageUrl: undefined,
       ...defaultValues,
     },
   });
@@ -62,8 +62,21 @@ export default function CategoryForm({ onSaved, editingCategoryId, defaultValues
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
       <Alert variant="error">{error}</Alert>
 
+      <Controller
+        name="categoryImageUrl"
+        control={control}
+        render={({ field }) => (
+          <ImageUpload
+            label="Category photo"
+            value={field.value}
+            onChange={(dataUrl) => field.onChange(dataUrl)}
+            helpText="PNG or JPG, up to 2MB. Shown in the categories list."
+          />
+        )}
+      />
+
       <div className={FIELD_GRID}>
-        <div className="sm:col-span-2">
+        <div className="sm:col-span-2 lg:col-span-1">
           <Input
             label="Category name"
             icon={FiTag}
@@ -78,19 +91,6 @@ export default function CategoryForm({ onSaved, editingCategoryId, defaultValues
           placeholder="GLD"
           error={errors.categoryCode?.message}
           {...register("categoryCode")}
-        />
-        <Controller
-          name="metalType"
-          control={control}
-          render={({ field }) => (
-            <Dropdown
-              label="Metal type"
-              options={[...METAL_TYPE_OPTIONS]}
-              value={field.value ?? ""}
-              onChange={field.onChange}
-              error={errors.metalType?.message}
-            />
-          )}
         />
         <Input
           label="HSN code (optional)"

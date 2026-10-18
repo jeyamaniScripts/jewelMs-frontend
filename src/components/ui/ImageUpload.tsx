@@ -9,14 +9,28 @@ interface ImageUploadProps {
   onChange: (dataUrl: string | undefined) => void;
   shape?: "circle" | "square";
   helpText?: string;
+  onFileSelected?: (file: File) => void;
+  allowedFormats?: string[];
+  maxFileSizeMb?: number;
 }
+
+const MIME_TYPES_BY_FORMAT: Record<string, string[]> = {
+  jpg: ["image/jpeg"],
+  jpeg: ["image/jpeg"],
+  png: ["image/png"],
+  webp: ["image/webp"],
+  gif: ["image/gif"],
+};
 
 export default function ImageUpload({
   label,
   value,
   onChange,
   shape = "square",
-  helpText = "PNG or JPG, up to 2MB.",
+  helpText = "PNG, JPG, WEBP, or GIF, up to 5MB.",
+  onFileSelected,
+  allowedFormats = ["jpg", "jpeg", "png", "webp", "gif"],
+  maxFileSizeMb = 5,
 }: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const shapeClass = shape === "circle" ? "rounded-full" : "rounded-xl";
@@ -24,14 +38,26 @@ export default function ImageUpload({
 
   const handleFile = (file: File | null) => {
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      // Kept simple — a toast/inline error would be a nice follow-up.
-      alert("Image is too large. Please choose a file under 2MB.");
+    if (!allowedFormats.includes(file.name.split(".").pop()?.toLowerCase() ?? "")) {
+      alert(`Choose an image in one of these formats: ${allowedFormats.join(", ")}.`);
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => onChange(reader.result as string);
-    reader.readAsDataURL(file);
+    const validMimeTypes = allowedFormats.flatMap((format) => MIME_TYPES_BY_FORMAT[format] ?? []);
+    if (!validMimeTypes.includes(file.type)) {
+      alert("The selected file does not match its image format.");
+      return;
+    }
+    if (file.size > maxFileSizeMb * 1024 * 1024) {
+      alert(`Image is too large. Choose a file no larger than ${maxFileSizeMb} MB.`);
+      return;
+    }
+    if (onFileSelected) {
+      onFileSelected(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = () => onChange(reader.result as string);
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -74,9 +100,12 @@ export default function ImageUpload({
         <input
           ref={inputRef}
           type="file"
-          accept="image/*"
+          accept={allowedFormats.map((format) => `.${format}`).join(",")}
           className="hidden"
-          onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
+          onChange={(e) => {
+            handleFile(e.target.files?.[0] ?? null);
+            e.currentTarget.value = "";
+          }}
         />
       </div>
     </div>

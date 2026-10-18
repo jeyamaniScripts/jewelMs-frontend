@@ -214,7 +214,7 @@ import {
 import { showToast } from "@/redux/slices/toastSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import type { MenuPermissions } from "@/constants/permissionActions";
-import { MENU_CONFIG } from "@/constants/menuConfig";
+import { PERMISSION_MENU_CONFIG } from "@/constants/menuConfig";
 
 function getInitialDraft(
   roleKey: string,
@@ -225,9 +225,12 @@ function getInitialDraft(
 ): Record<string, MenuPermissions> {
   const source =
     rolesList.find((r) => r.roleKey === roleKey)?.permissions ?? {};
-  return MENU_CONFIG.reduce(
+  return PERMISSION_MENU_CONFIG.reduce(
     (acc, item) => {
-      acc[item.key] = source[item.key] ?? emptyMenuPermissions();
+      acc[item.key] = {
+        ...emptyMenuPermissions(),
+        ...(source[item.key] ?? {}),
+      };
       return acc;
     },
     {} as Record<string, MenuPermissions>,
@@ -302,7 +305,7 @@ export default function RolesPermissionsPage() {
       <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <PageHeader
           title="Roles & Permissions"
-          subtitle="Control what each role can view, add, edit, delete, export, and print."
+          subtitle="Control access, approvals, status changes, exports, and printing for each role."
         />
         <Button
           type="button"

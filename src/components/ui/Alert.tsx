@@ -12,11 +12,11 @@ interface AlertProps {
 
 const VARIANT = {
   error: {
-    wrap: "bg-danger/10 text-danger border-danger/20",
+    wrap: "bg-danger-subtle text-danger border-danger/30",
     Icon: FiAlertCircle,
   },
   success: {
-    wrap: "bg-success/10 text-success border-success/20",
+    wrap: "bg-success-subtle text-success border-success/30",
     Icon: FiCheckCircle,
   },
 } as const;

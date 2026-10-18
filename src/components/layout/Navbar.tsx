@@ -13,6 +13,7 @@ import { useAppDispatch, useAppSelector } from "@/redux/hooks";
 import { openSidebar } from "@/redux/slices/uiSlice";
 import { logoutUser } from "@/redux/slices/authSlice";
 import { ROLE_LABEL } from "@/constants/roles";
+import { MdDiamond } from "react-icons/md";
 import ThemeToggle from "@/components/theme/ThemeToggle";
 import NotificationBell from "@/components/layout/NotificationBell";
 import BranchSwitcher from "@/components/layout/BranchSwitcher";
@@ -22,6 +23,8 @@ export default function Navbar() {
   const router = useRouter();
   const user = useAppSelector((state) => state.auth.user);
   const role = useAppSelector((state) => state.auth.role);
+  const companyName =
+    user?.companyName || user?.companyShortName || "Ashira Jewels";
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -50,31 +53,36 @@ export default function Navbar() {
     : "?";
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-end border-b border-border bg-surface px-4 sm:px-6">
-      <button
-        type="button"
-        onClick={() => dispatch(openSidebar())}
-        className="rounded-lg p-2 text-ink-muted hover:bg-surface-tint lg:hidden"
-        aria-label="Open menu"
-      >
-        <MdMenu size={22} />
-      </button>
+    <header className="sticky top-0 z-30 flex h-14 min-w-0 shrink-0 items-center justify-between gap-2 border-b border-border bg-surface px-2 sm:px-4 lg:px-6">
+      <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3">
+        <button
+          type="button"
+          onClick={() => dispatch(openSidebar())}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-ink-muted hover:bg-surface-tint lg:hidden"
+          aria-label="Open menu"
+        >
+          <MdMenu size={22} />
+        </button>
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-white lg:hidden">
+          <MdDiamond size={16} />
+        </span>
+        <span className="min-w-0 max-w-[min(35vw,15rem)] truncate font-heading text-sm font-semibold text-ink sm:max-w-[15rem] sm:text-base">
+          {companyName}
+        </span>
+      </div>
 
-      <div className="flex items-center gap-2 sm:gap-3">
-        {user?.canViewAllBranches && <BranchSwitcher />}
-        <ThemeToggle />
-        {role &&
-          ["super_admin", "brand_admin", "showroom_admin"].includes(role) && (
-            <NotificationBell />
-          )}
+      <div className="flex shrink-0 items-center gap-1 sm:gap-2 lg:gap-3">
+        {(user?.canViewAllBranches || user?.showroomId) && <BranchSwitcher />}
+        <ThemeToggle className="h-8 w-8 sm:h-9 sm:w-9" />
+        {role && <NotificationBell />}
 
         <div className="relative" ref={menuRef}>
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
-            className="flex items-center gap-2 rounded-xl py-1.5 pl-1.5 pr-2.5 hover:bg-surface-tint"
+            className="flex items-center gap-1 rounded-xl py-1 pl-1 pr-0.5 hover:bg-surface-tint sm:gap-2 sm:py-1.5 sm:pl-1.5 sm:pr-2.5"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-white">
               {initials}
             </span>
             <span className="hidden text-left sm:block">
@@ -87,7 +95,7 @@ export default function Navbar() {
             </span>
             <MdKeyboardArrowDown
               size={18}
-              className={`text-ink-muted transition-transform ${menuOpen ? "rotate-180" : ""}`}
+              className={`hidden text-ink-muted transition-transform sm:block ${menuOpen ? "rotate-180" : ""}`}
             />
           </button>
 

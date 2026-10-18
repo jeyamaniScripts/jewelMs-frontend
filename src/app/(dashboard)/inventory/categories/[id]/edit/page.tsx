@@ -29,20 +29,20 @@ export default function EditCategoryPage() {
   return (
     <div>
       <PageHeader title="Edit Category" subtitle={`Editing ${activeCategory.categoryName}.`} />
-      <CategoryForm
-        editingCategoryId={activeCategory.id}
-        defaultValues={{
-          categoryName: activeCategory.categoryName,
-          categoryCode: activeCategory.categoryCode,
-          metalType: activeCategory.metalType,
-          hsnCode: activeCategory.hsnCode ?? "",
-          defaultGstRate: activeCategory.defaultGstRate !== undefined ? String(activeCategory.defaultGstRate) : "",
-        }}
-        onSaved={() => {
-          dispatch(showToast("Category updated successfully.", "success"));
-          router.push("/inventory/categories");
-        }}
-      />
+    <CategoryForm
+  editingCategoryId={activeCategory.id}
+  defaultValues={{
+    categoryName: activeCategory.categoryName,
+    categoryCode: activeCategory.categoryCode,
+    hsnCode: activeCategory.hsnCode ?? "",
+    defaultGstRate: activeCategory.defaultGstRate !== undefined ? String(activeCategory.defaultGstRate) : "",
+    categoryImageUrl: activeCategory.categoryImageUrl,
+  }}
+  onSaved={() => {
+    dispatch(showToast("Category updated successfully.", "success"));
+    router.push("/inventory/categories");
+  }}
+/>
     </div>
   );
 }

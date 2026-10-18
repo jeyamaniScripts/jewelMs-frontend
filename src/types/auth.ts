@@ -27,6 +27,7 @@ export interface User {
   passwordChangedAt?: string;
   /** Brand Admin, or a Showroom Admin whose own showroom is the main branch. */
   canViewAllBranches?: boolean;
+  showroomName?: string | null;
   companyName?: string | null;
   companyShortName?: string | null;
 }

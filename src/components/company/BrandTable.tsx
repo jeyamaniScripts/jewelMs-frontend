@@ -12,6 +12,8 @@ import DataTable from "@/components/ui/table/DataTable";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import Modal from "@/components/ui/Modal";
 import BrandDetails from "@/components/company/BrandDetails";
+import { useSiteFormatters } from "@/components/layout/SiteFormatProvider";
+import type { SiteFormatters } from "@/lib/siteFormatters";
 
 function StatusBadge({ status }: { status: Brand["status"] }) {
   const active = status === "active";
@@ -115,7 +117,7 @@ function BrandActions({ brand, onView }: { brand: Brand; onView: () => void }) {
   );
 }
 
-const COLUMNS: ColumnDef<Brand>[] = [
+const createColumns = (formatters: SiteFormatters): ColumnDef<Brand>[] => [
   {
     key: "companyName",
     header: "Company",
@@ -170,9 +172,9 @@ const COLUMNS: ColumnDef<Brand>[] = [
     header: "Created",
     sortable: true,
     defaultVisible: false,
-    render: (b) => new Date(b.createdAt).toLocaleDateString(),
+    render: (b) => formatters.date(b.createdAt),
     sortValue: (b) => new Date(b.createdAt).getTime(),
-    exportValue: (b) => new Date(b.createdAt).toLocaleDateString(),
+    exportValue: (b) => formatters.date(b.createdAt),
   },
   {
     key: "status",
@@ -203,13 +205,15 @@ export default function BrandTable({
   onLimitChange: (limit: number) => void;
   isLoading?: boolean;
 }) {
+  const formatters = useSiteFormatters();
+  const columns = createColumns(formatters);
   const [visibleColumnKeys, setVisibleColumnKeys] = useState(
-    COLUMNS.filter((c) => c.defaultVisible !== false).map((c) => c.key)
+    columns.filter((c) => c.defaultVisible !== false).map((c) => c.key)
   );
   const [viewingBrand, setViewingBrand] = useState<Brand | null>(null);
 
   const columnsWithActions: ColumnDef<Brand>[] = [
-    ...COLUMNS,
+    ...columns,
     {
       key: "actions",
       header: "Actions",

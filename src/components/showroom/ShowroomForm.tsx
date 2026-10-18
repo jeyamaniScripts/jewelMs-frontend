@@ -5,8 +5,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { FiUser, FiMail, FiPhone, FiMapPin, FiHome } from "react-icons/fi";
 
 import { showroomSchema, type ShowroomFormValues } from "@/schemas/showroomSchemas";
-import { createShowroom, updateShowroom } from "@/redux/slices/showroomSlice";
+import { createShowroom, fetchBranchOptions, updateShowroom } from "@/redux/slices/showroomSlice";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import { showToast } from "@/redux/slices/toastSlice";
 
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
@@ -50,14 +51,27 @@ export default function ShowroomForm({ onCreated, editingShowroomId, defaultValu
   const onSubmit = async (formValues: ShowroomFormValues) => {
     if (isEditing) {
       const result = await dispatch(updateShowroom({ id: editingShowroomId, formData: formValues }));
-      if (updateShowroom.fulfilled.match(result)) onCreated();
+      if (updateShowroom.fulfilled.match(result)) {
+        await refreshBranchOptions();
+        onCreated();
+      }
       return;
     }
     if (!brandId) return;
     const result = await dispatch(createShowroom({ brandId, formData: formValues }));
     if (createShowroom.fulfilled.match(result)) {
       reset();
+      await refreshBranchOptions();
       onCreated();
+    }
+  };
+
+  const refreshBranchOptions = async () => {
+    if (!brandId) return;
+    try {
+      await dispatch(fetchBranchOptions(brandId)).unwrap();
+    } catch {
+      dispatch(showToast("Showroom saved, but the branch list could not be refreshed.", "error"));
     }
   };
 

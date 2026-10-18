@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { MdRefresh, MdDelete, MdEdit, MdCategory, MdCheckCircle, MdCancel } from "react-icons/md";
+import { MdDelete, MdEdit, MdCategory, MdCheckCircle, MdCancel, MdImage } from "react-icons/md";
 import type { Category } from "@/types/category";
 import type { ColumnDef, PaginationMeta } from "@/types/dataTable";
 import { useAppDispatch } from "@/redux/hooks";
@@ -10,6 +10,20 @@ import { deleteCategory, toggleCategoryStatus } from "@/redux/slices/categorySli
 import { showToast } from "@/redux/slices/toastSlice";
 import DataTable from "@/components/ui/table/DataTable";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import { useSiteFormatters } from "@/components/layout/SiteFormatProvider";
+import type { SiteFormatters } from "@/lib/siteFormatters";
+
+function CategoryThumbnail({ category }: { category: Category }) {
+  if (category.categoryImageUrl) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={category.categoryImageUrl} alt={category.categoryName} className="h-9 w-9 rounded-lg object-cover" />;
+  }
+  return (
+    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-tint text-ink-muted">
+      <MdImage size={16} />
+    </span>
+  );
+}
 
 function StatusBadge({ status }: { status: Category["status"] }) {
   const active = status === "active";
@@ -20,14 +34,6 @@ function StatusBadge({ status }: { status: Category["status"] }) {
     >
       {active ? <MdCheckCircle size={13} /> : <MdCancel size={13} />}
       {active ? "Active" : "Inactive"}
-    </span>
-  );
-}
-
-function MetalTypeBadge({ metalType }: { metalType: Category["metalType"] }) {
-  return (
-    <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-caption font-medium capitalize text-primary">
-      {metalType}
     </span>
   );
 }
@@ -99,13 +105,18 @@ function CategoryActions({ category }: { category: Category }) {
   );
 }
 
-const COLUMNS: ColumnDef<Category>[] = [
+const createColumns = (formatters: SiteFormatters): ColumnDef<Category>[] => [
   {
     key: "categoryName",
     header: "Category",
     sortable: true,
     alwaysVisible: true,
-    render: (c) => <span className="font-medium text-ink">{c.categoryName}</span>,
+    render: (c) => (
+      <div className="flex items-center gap-2">
+        <CategoryThumbnail category={c} />
+        <span className="font-medium text-ink">{c.categoryName}</span>
+      </div>
+    ),
     sortValue: (c) => c.categoryName.toLowerCase(),
     exportValue: (c) => c.categoryName,
   },
@@ -116,14 +127,6 @@ const COLUMNS: ColumnDef<Category>[] = [
     render: (c) => <span className="font-mono text-ink-muted">{c.categoryCode}</span>,
     sortValue: (c) => c.categoryCode,
     exportValue: (c) => c.categoryCode,
-  },
-  {
-    key: "metalType",
-    header: "Metal Type",
-    sortable: true,
-    render: (c) => <MetalTypeBadge metalType={c.metalType} />,
-    sortValue: (c) => c.metalType,
-    exportValue: (c) => c.metalType,
   },
   {
     key: "hsnCode",
@@ -146,9 +149,9 @@ const COLUMNS: ColumnDef<Category>[] = [
     header: "Created",
     sortable: true,
     defaultVisible: false,
-    render: (c) => new Date(c.createdAt).toLocaleDateString(),
+    render: (c) => formatters.date(c.createdAt),
     sortValue: (c) => new Date(c.createdAt).getTime(),
-    exportValue: (c) => new Date(c.createdAt).toLocaleDateString(),
+    exportValue: (c) => formatters.date(c.createdAt),
   },
   {
     key: "status",
@@ -179,12 +182,14 @@ export default function CategoryTable({
   onLimitChange: (limit: number) => void;
   isLoading?: boolean;
 }) {
+  const formatters = useSiteFormatters();
+  const columns = createColumns(formatters);
   const [visibleColumnKeys, setVisibleColumnKeys] = useState(
-    COLUMNS.filter((c) => c.defaultVisible !== false).map((c) => c.key)
+    columns.filter((c) => c.defaultVisible !== false).map((c) => c.key)
   );
 
   const columnsWithActions: ColumnDef<Category>[] = [
-    ...COLUMNS,
+    ...columns,
     {
       key: "actions",
       header: "Actions",
@@ -217,14 +222,14 @@ export default function CategoryTable({
       mobileCard={(category) => (
         <div className="rounded-2xl border border-border bg-surface p-4 shadow-card">
           <div className="flex items-start justify-between gap-2">
-            <div>
-              <p className="font-heading text-base font-medium text-ink">{category.categoryName}</p>
-              <p className="font-mono text-sm text-ink-muted">{category.categoryCode}</p>
+            <div className="flex items-center gap-2">
+              <CategoryThumbnail category={category} />
+              <div>
+                <p className="font-heading text-base font-medium text-ink">{category.categoryName}</p>
+                <p className="font-mono text-sm text-ink-muted">{category.categoryCode}</p>
+              </div>
             </div>
             <StatusBadge status={category.status} />
-          </div>
-          <div className="mt-3 flex items-center justify-between">
-            <MetalTypeBadge metalType={category.metalType} />
           </div>
           <div className="mt-3 flex justify-end border-t border-border pt-3">
             <CategoryActions category={category} />
