@@ -37,18 +37,6 @@ function toApiPayload(formData: Partial<ProductModelFormValues>) {
     makingChargeValue,
     wastagePercent,
     stoneDetails,
-    openingWeight,
-    openingAmount,
-    hsnCode,
-    occasion,
-    metalType,
-    gender,
-    tagNumber,
-    designNumber,
-    collectionName,
-    designBrand,
-    description,
-    supplierPayment,
     ...rest
   } = formData;
 
@@ -58,18 +46,7 @@ function toApiPayload(formData: Partial<ProductModelFormValues>) {
       grossWeightMin !== undefined && grossWeightMax !== undefined
         ? { min: Number(grossWeightMin), max: Number(grossWeightMax) }
         : undefined,
-    openingWeight: openingWeight ? Number(openingWeight) : null,
-    openingAmount: openingAmount ? Number(openingAmount) : null,
-    hsnCode: hsnCode || null,
-    occasion: occasion || null,
-    metalType: metalType || null,
-    gender: gender || null,
-    tagNumber: tagNumber || null,
-    designNumber: designNumber || null,
-    collectionName: collectionName || null,
-    designBrand: designBrand || null,
-    description: description || null,
-    makingChargeType: makingChargeType ? makingChargeType : null,
+    makingChargeType: makingChargeType || null,
     makingChargeValue: makingChargeValue ? Number(makingChargeValue) : null,
     wastagePercent: wastagePercent ? Number(wastagePercent) : null,
     stoneDetails: formData.hasStones
@@ -78,14 +55,6 @@ function toApiPayload(formData: Partial<ProductModelFormValues>) {
           approxWeight: s.approxWeight ? Number(s.approxWeight) : undefined,
         }))
       : [],
-    supplierPayment: formData.isPartialProduct
-      ? {
-          supplierName: supplierPayment?.supplierName || undefined,
-          paymentStatus: supplierPayment?.paymentStatus || undefined,
-          amountPaid: supplierPayment?.amountPaid ? Number(supplierPayment.amountPaid) : undefined,
-          amountDue: supplierPayment?.amountDue ? Number(supplierPayment.amountDue) : undefined,
-        }
-      : undefined,
   };
 }
 

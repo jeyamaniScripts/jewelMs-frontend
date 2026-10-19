@@ -55,7 +55,7 @@ function errorMessage(err: unknown, fallback: string): string {
 }
 
 export interface ShowroomListQuery {
-  brandId: string;
+  brandId?: string;
   search?: string;
   sortBy?: "showroomName" | "shortName" | "managerName" | "contactEmail" | "employeesCount" | "createdAt" | "status";
   order?: "asc" | "desc";
@@ -69,8 +69,9 @@ export interface ShowroomListQuery {
  *  passing a different id here. */
 export const fetchShowrooms = createAsyncThunk(
   "showroom/fetchShowrooms",
-  async (query: ShowroomListQuery, { signal }) => {
-    const params = new URLSearchParams({ brandId: query.brandId });
+  async (query: ShowroomListQuery = {}, { signal }) => {
+    const params = new URLSearchParams();
+    if (query.brandId) params.set("brandId", query.brandId); // <-- set conditionally
     if (query.search) params.set("search", query.search);
     if (query.sortBy) params.set("sortBy", query.sortBy);
     if (query.order) params.set("order", query.order);

@@ -362,7 +362,7 @@ export default function ProductModelForm({
                     <div className="flex items-end pb-2">
                       <LabeledCheckbox
                         label="Included in price"
-                        checked={includedField.value}
+                        checked={Boolean(includedField.value)}
                         onChange={includedField.onChange}
                       />
                     </div>

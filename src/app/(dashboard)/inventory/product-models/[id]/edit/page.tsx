@@ -53,10 +53,9 @@ export default function EditProductModelPage() {
       ? populatedName.productGroupId
       : populatedGroup?.id;
 
+  const categoryId = populatedGroup?.categoryId;
   const defaultCategoryId =
-    populatedGroup && typeof populatedGroup.categoryId === "string"
-      ? populatedGroup.categoryId
-      : populatedGroup?.categoryId?.id;
+    typeof categoryId === "string" ? categoryId : categoryId?.id;
 
   return (
     <div>
